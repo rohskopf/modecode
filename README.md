@@ -1,4 +1,4 @@
-# ModeCode 8-)
+# ModeCode 0.0
 
 ModeCode is a massively parallel and modular program that aids in the study of vibrational modes.
 
