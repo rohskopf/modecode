@@ -57,7 +57,7 @@ This task uses finite difference to extract the 2nd, 3rd, or 4th order interatom
 
 The general use of this task is:
 
-    mpirun -np P mc fd delta order
+    mpirun -np P mc fd delta cutoff order
 
 where 
 
@@ -65,6 +65,8 @@ where
 - `fd` refers to the finite difference task.
 - `delta` is the finite difference step size, anywhere from 0.0001 to 0.01 depending on the 
   stiffness of your material. 
+- `cutoff` is the interatomic interaction cutoff for force constants, in whatever units declared by
+  LAMMPS.
 - `order` is the order of finite difference, e.g. 2, 3, 4.
 
 #### Outputs.
