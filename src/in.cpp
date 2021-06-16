@@ -70,138 +70,6 @@ void In::readInput()
   // Ignore the first line
   getline(INPUT, line); 
   string characters;
-  // Loop through 18 more lines
-  for (int i=1; i<=18; i++)
-  {
-    getline(INPUT, line);
-    switch (i)
-    {
-      case 1:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               ndisps = value;
-               //cout << gen_num << endl;
-             }
-      case 2:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               //delta = value;
-               //cout << extrainds << endl;
-             }
-      case 3:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               pop_size_in = value;
-             }
-      case 4:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               mut_rate_in = value;
-             }
-      case 5:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               eliteperc_in = value;
-             }
-      case 6:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               unknowns_in = value;
-             }
-      case 7:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               unknowns_extra_in = value;
-             }
-      case 8:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               M_in = value;
-             }
-      case 9:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               N_rad = value;
-             }
-      case 10:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               N_ang = value;
-             }
-      case 11:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << chavoid In::readEvec()
-               //cout << value << endl;
-               N_types = value;
-             }
-      case 12:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               rc = value;
-             }
-      case 13:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               rc2 = value;
-             }
-      case 14:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               rc3 = value;
-             }
-      case 15:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               tol2 = value;
-             }
-      case 16:{ //cout << line << endl; // VECTOR INPUTS START HERE
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               tol3 = value;
-             }
-      case 17:{ //cout << line << endl;
-               stringstream ss(line);
-               ss >> characters >> value;
-               //cout << characters << endl;
-               //cout << value << endl;
-               tol4 = value;
-             }
-
-  
-    } // switch (i)
-
-  } // for (int i=1..)
 
   // Now loop through the LAMMPS setup commands, and store the commands in "commands", delimited by a ","
   getline(INPUT, line);
@@ -245,7 +113,6 @@ void In::readInput()
     //debug << "n: " << n << endl;
   }
   //writefile << "LAMMPS SETUP COMMANDS SUCCESSFULLY INPUTTED" << endl;
-
 
   // Loop through LAMMPS commands and input them 
   n = nontab_commands.find(',');
@@ -479,7 +346,12 @@ void In::calcFC2()
     //printf(" Rank: %d\n", rank);
 
     delta = mc->delta;
+    rc = mc->cutoff;
     order = mc->order;
+    // Tolerances are hardcoded for now... May change later.
+    tol2 = 1e-10;
+    tol3 = 1e-10;
+    tol4 = 1e-10;
     //printf("delta: %f\n",delta);
     int natoms = lmp->atom->natoms;
     double *pe_p;
@@ -705,14 +577,14 @@ void In::calcFC2()
                 ii = 3*ni+a;
 				for (int nj=0; nj<natoms; nj++){
 					rij = calcRij(x0[ni][0],x0[ni][1],x0[ni][2],x0[nj][0],x0[nj][1],x0[nj][2]);
-					if (rij<rc2){
+					if (rij<rc){
 					    for (int b=0; b<3; b++){
 						    jj = 3*nj+b;
 						    for (int nk=0; nk<natoms; nk++){
 
 						        rik = calcRij(x0[ni][0],x0[ni][1],x0[ni][2],x0[nk][0],x0[nk][1],x0[nk][2]);
                                 rjk = calcRij(x0[nj][0],x0[nj][1],x0[nj][2],x0[nk][0],x0[nk][1],x0[nk][2]);
-						        if (rik<rc2 && rjk<rc2){
+						        if (rik<rc && rjk<rc){
 							        for (int c=0;c<3;c++){
 								        kk=3*nk+c;
                                         //fprintf(fh_debug, "%d %d %d\n", i,j,k);
@@ -800,14 +672,14 @@ void In::calcFC2()
                 ii = 3*ni+a;
 				for (int nj=0; nj<natoms; nj++){
 					rij = calcRij(x0[ni][0],x0[ni][1],x0[ni][2],x0[nj][0],x0[nj][1],x0[nj][2]);
-					if (rij<rc2){
+					if (rij<rc){
 					    for (int b=0; b<3; b++){
 						    jj = 3*nj+b;
 						    for (int nk=0; nk<natoms; nk++){
 
 						        rik = calcRij(x0[ni][0],x0[ni][1],x0[ni][2],x0[nk][0],x0[nk][1],x0[nk][2]);
                                 rjk = calcRij(x0[nj][0],x0[nj][1],x0[nj][2],x0[nk][0],x0[nk][1],x0[nk][2]);
-						        if (rik<rc2 && rjk<rc2){
+						        if (rik<rc && rjk<rc){
 							        for (int c=0;c<3;c++){
 								        kk=3*nk+c;
                                         //fprintf(fh_debug, "%d %d %d\n", i,j,k);
@@ -937,7 +809,7 @@ void In::calcFC2()
 				for (int nj=0; nj<natoms; nj++){
 
 			        rij = calcRij(x0[ni][0],x0[ni][1],x0[ni][2],x0[nj][0],x0[nj][1],x0[nj][2]);
-			        if (rij<rc3){
+			        if (rij<rc){
 
 					    for (int b=0; b<3; b++){
 						    j = 3*nj+b;
@@ -945,7 +817,7 @@ void In::calcFC2()
 
 					            rik = calcRij(x0[ni][0],x0[ni][1],x0[ni][2],x0[nk][0],x0[nk][1],x0[nk][2]);
                                 rjk = calcRij(x0[nj][0],x0[nj][1],x0[nj][2],x0[nk][0],x0[nk][1],x0[nk][2]);
-					            if (rik<rc3 && rjk<rc3){
+					            if (rik<rc && rjk<rc){
 
 							        for (int c=0;c<3;c++){
 								        k=3*nk+c;
@@ -955,7 +827,7 @@ void In::calcFC2()
                                             ril = calcRij(x0[ni][0],x0[ni][1],x0[ni][2],x0[nl][0],x0[nl][1],x0[nl][2]);
                                             rjl = calcRij(x0[nj][0],x0[nj][1],x0[nj][2],x0[nl][0],x0[nl][1],x0[nl][2]);
                                             rkl = calcRij(x0[nk][0],x0[nk][1],x0[nk][2],x0[nl][0],x0[nl][1],x0[nl][2]);
-							                if (ril<rc3 && rjl<rc3 && rkl<rc3){
+							                if (ril<rc && rjl<rc && rkl<rc){
 
                                                 for (int d=0;d<3;d++){
                                                     l=3*nl+d;
@@ -1071,7 +943,7 @@ void In::calcFC2()
 				for (int nj=0; nj<natoms; nj++){
 
 			        rij = calcRij(x0[ni][0],x0[ni][1],x0[ni][2],x0[nj][0],x0[nj][1],x0[nj][2]);
-			        if (rij<rc3){
+			        if (rij<rc){
 
 					    for (int b=0; b<3; b++){
 						    j = 3*nj+b;
@@ -1079,7 +951,7 @@ void In::calcFC2()
 
 					            rik = calcRij(x0[ni][0],x0[ni][1],x0[ni][2],x0[nk][0],x0[nk][1],x0[nk][2]);
                                 rjk = calcRij(x0[nj][0],x0[nj][1],x0[nj][2],x0[nk][0],x0[nk][1],x0[nk][2]);
-					            if (rik<rc3 && rjk<rc3){
+					            if (rik<rc && rjk<rc){
 
 							        for (int c=0;c<3;c++){
 								        k=3*nk+c;
@@ -1089,7 +961,7 @@ void In::calcFC2()
                                             ril = calcRij(x0[ni][0],x0[ni][1],x0[ni][2],x0[nl][0],x0[nl][1],x0[nl][2]);
                                             rjl = calcRij(x0[nj][0],x0[nj][1],x0[nj][2],x0[nl][0],x0[nl][1],x0[nl][2]);
                                             rkl = calcRij(x0[nk][0],x0[nk][1],x0[nk][2],x0[nl][0],x0[nl][1],x0[nl][2]);
-							                if (ril<rc3 && rjl<rc3 && rkl<rc3){
+							                if (ril<rc && rjl<rc && rkl<rc){
 
                                                 for (int d=0;d<3;d++){
                                                     l=3*nl+d;

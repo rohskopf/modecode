@@ -44,6 +44,7 @@ namespace MC_NS
         int seed;
 
         double delta;
+        double cutoff;
         int order;
 
         std::string task; // task to perform

@@ -74,7 +74,7 @@ MC::MC(int narg, char **arg)
 
     // Grab user input to initialize settings
     initialize();
-
+    
     // Run the code and desired task
     run(narg,arg);
 
@@ -121,20 +121,26 @@ void MC::create()
 
 void MC::initialize()
 {
+    if (rank==0) printf(" Reading INPUT.\n");
     in->readInput();
+
 }
 
 void MC::run(int nargs, char **args)
 {
 
   if (task=="fd"){
-    if (nargs!=4){
-        printf(" Need 4 arguments for FD!\n");
+    if (nargs!=5){
+        printf(" Need 5 arguments for FD! fd delta cutoff order\n");
         exit(1);
     }
     delta = atof(args[2]);
-    order = atoi(args[3]);
-    if (rank==0) printf(" Performing %d order FD on %d procs.\n",order,nprocs);
+    cutoff = atof(args[3]);
+    order = atoi(args[4]);
+    if (rank==0){
+      printf(" Performing %d order FD on %d procs.\n",order,nprocs);
+      printf(" Cutoff: %f\n", cutoff);
+    }
     in->calcFC2();
   }
 
