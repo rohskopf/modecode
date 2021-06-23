@@ -1,8 +1,10 @@
 # ModeCode 0.0
 
-ModeCode is a massively parallel and modular program that aids in the study of vibrational modes.
+Vibrational modes are collective movements in a system. In atomic systems, these collective motions are composed of atoms and they vibrate at specific frequencies. These motions influence all phenomena ranging from energy flow, mass diffusion, and catalyzing chemical/biochemical reactions. For example consider the vibrational mode of atoms in a superlattice below, modes like these aid in the transfer of heat through superlattice thermoelectric devices, and understanding their behavior will help us engineer better materials!
 
 ![Alt Text](https://github.com/rohskopf/modecode/blob/main/extended_mode.gif)
+
+ModeCode is a massively parallel and modular program that aids in the study of vibrational modes. This program is the first of its kind, as all other open-source programs only deal with vibrational modes/phonons in ideal crystals. By interfacing with a large library of interatomic potentials and alleviating the assumption of periodicity, ModeCode allows for the study of vibrational modes in all materials. 
 
 ## Installation
 
