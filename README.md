@@ -1,6 +1,10 @@
 # ModeCode 0.0
 
-Vibrational modes are collective movements in a system. In atomic systems, these collective motions are composed of atoms and they vibrate at specific frequencies. These motions influence all phenomena ranging from energy flow, mass diffusion, and catalyzing chemical/biochemical reactions. For example consider the vibrational mode of atoms in a superlattice below, modes like these aid in the transfer of heat through superlattice thermoelectric devices, and understanding their behavior will help us engineer better materials!
+Vibrational modes are collective movements in a system. In atomic systems, these collective motions are composed of atoms and they vibrate at specific frequencies. All the motion in an atomic system is determined by Newton's 2nd law, and this motion may be decomposed into the individual modes. This is illustrated below for a diamond crystal with seemingly random thermal vibrations at finite temperature.
+
+![Alt Text](https://github.com/rohskopf/modecode/blob/main/mode_decomposition.gif)
+
+These motions influence all phenomena ranging from energy flow, mass diffusion, and catalyzing chemical/biochemical reactions. For example consider the vibrational mode of atoms in a superlattice below, modes like these aid in the transfer of heat through superlattice thermoelectric devices, and understanding their behavior will help us engineer better materials!
 
 ![Alt Text](https://github.com/rohskopf/modecode/blob/main/extended_mode.gif)
 
