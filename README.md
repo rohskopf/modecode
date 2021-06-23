@@ -2,7 +2,7 @@
 
 ModeCode is a massively parallel and modular program that aids in the study of vibrational modes.
 
-![Alt Text](https://github.com/rohskopf/modecode/extended_mode.gif)
+![Alt Text](https://github.com/rohskopf/modecode/blob/main/extended_mode.gif)
 
 ## Installation
 
