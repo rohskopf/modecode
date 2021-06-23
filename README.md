@@ -2,6 +2,8 @@
 
 ModeCode is a massively parallel and modular program that aids in the study of vibrational modes.
 
+![Alt Text](https://github.com/rohskopf/modecode/extended_mode.gif)
+
 ## Installation
 
 Before we install ModeCode, we must first install LAMMPS as a shared library.
