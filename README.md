@@ -1,12 +1,16 @@
 # ModeCode 0.0
 
-Vibrational modes are collective movements in a system. In atomic systems, these collective motions are composed of atoms and they vibrate at specific frequencies. All the motion in an atomic system is determined by Newton's 2nd law, and this motion may be decomposed into the individual modes. This is illustrated below for a diamond crystal with seemingly random thermal vibrations at finite temperature.
+Vibrational modes are collective movements in a system. In atomic systems, these collective motions are composed of atoms and they vibrate at specific frequencies. All the motion in an atomic system is determined by Newton's 2nd law, and this motion may be decomposed into the individual modes. This is illustrated below for atoms in a diamond crystal with seemingly random thermal vibrations at finite temperature.
 
 ![Alt Text](https://github.com/rohskopf/modecode/blob/main/mode_decomposition.gif)
 
-These motions influence all phenomena ranging from energy flow, mass diffusion, and catalyzing chemical/biochemical reactions. For example consider the vibrational mode of atoms in a superlattice below, modes like these aid in the transfer of heat through superlattice thermoelectric devices, and understanding their behavior will help us engineer better materials!
+These motions influence all phenomena that we observe in materials, most notable thermal and electrical transport. For example consider the vibrational mode of atoms in a superlattice below, modes like these aid in the transfer of heat through superlattice thermoelectric devices, and understanding their behavior will help us engineer better materials.
 
 ![Alt Text](https://github.com/rohskopf/modecode/blob/main/extended_mode.gif)
+
+Aside from influencing energy transport, modes also catalyze events like chemical/biochemical reactions or diffusion. This is illustrated below where you can see the vibrations in a paladium lattice (red atoms) influencing the diffusion of a hydrogen atom (blue atom) - understanding these vibrational contributions to diffusion or chemical reactions will help us engineer these phenomena. 
+
+![Alt Text](https://github.com/rohskopf/modecode/blob/main/2d_diffusion.gif)
 
 ModeCode is a massively parallel and modular program that aids in the study of vibrational modes. This program is the first of its kind, as all other open-source programs only deal with vibrational modes/phonons in ideal crystals. By interfacing with a large library of interatomic potentials and alleviating the assumption of periodicity, ModeCode allows for the study of vibrational modes in all materials. 
 
