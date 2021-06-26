@@ -10,7 +10,7 @@ These motions influence all phenomena that we observe in materials, including th
 
 ModeCode is a massively parallel and modular program that aids in the study of vibrational modes. This program is the first of its kind, as all other open-source programs only deal with vibrational modes/phonons in ideal crystals. By interfacing with a large library of interatomic potentials and alleviating the assumption of periodicity, ModeCode allows for the study of vibrational modes in all materials. 
 
-## Installation
+# Installation
 
 Before we install ModeCode, we must first install LAMMPS as a shared library.
 
@@ -40,7 +40,7 @@ Go into src/ and install with:
 
 That's it! We just made a ModeCode executable called `mc`.
 
-## Using ModeCode
+# Using ModeCode
 
 ModeCode is simple - you declare a calculation task and settings and must have an INPUT file in the directory that you run it in. These details are explained below.
 
@@ -65,8 +65,6 @@ This file is composed of LAMMPS commands that declare your system geometry, pote
 Other than the INPUT file, other files required depend on whatever your INPUT file uses. For example if you use the LAMMPS `read_data` command in your INPUT file, you need to also include the data file in your directory. If your LAMMPS pair style has a file it reads parameters from, then that file must also be included in the directory. Any file used by your INPUT file must also be included in the directory. 
 
 Now that we understand the different inputs used by ModeCode, let's consider the different tasks or calculations that are possible.
-
-***
 
 ### Finite difference (`fd`) task.
 
