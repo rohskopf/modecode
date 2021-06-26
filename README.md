@@ -42,6 +42,8 @@ That's it! We just made a ModeCode executable called `mc`.
 
 ## Using ModeCode
 
+ModeCode is simple - you declare a calculation task and settings and must have an INPUT file in the directory that you run it in. These details are explained below.
+
 The general format for running ModeCode is to do:
 
     mpirun -np P mc task setting1 setting2 setting3 ...
@@ -54,7 +56,15 @@ referes to the C++ module/class being used.
 - `settings` further specify which function in the 
 `task` is used, or input values needed to run the function.
 
-There may be few or many `settings`, depending on which `task` we use, so let's break it down.
+There may be few or many `settings`, depending on which `task` we use. Before we get into the multiple tasks, it's first important to understand the input files required to use ModeCode.
+
+### INPUT file.
+
+This file is composed of LAMMPS commands that declare your system geometry, potential, neighborlist settings, etc. Please refer to the LAMMPS documentation to declare desired settings for your system. It's important to declare LAMMPS settings here, because some tasks in ModeCode such as finite difference will evaluate the potential at many different geometries; we therefore need to declare neighborlist settings, a system geometry via LAMMPS data files, atom styles, and pair styles. 
+
+Other than the INPUT file, other files required depend on whatever your INPUT file uses. For example if you use the LAMMPS `read_data` command in your INPUT file, you need to also include the data file in your directory. If your LAMMPS pair style has a file it reads parameters from, then that file must also be included in the directory. Any file used by your INPUT file must also be included in the directory. 
+
+Now that we understand the different inputs used by ModeCode, let's consider the different tasks or calculations that are possible.
 
 ***
 
