@@ -84,7 +84,7 @@ where
   stiffness of your material with the same units declared by LAMMPS in the INPUT file. 
 - `cutoff` is the interatomic interaction cutoff for force constants, in whatever units declared by
   LAMMPS.
-- `tolerance` tells the program to ignore force constants below this absolute value.
+- `tolerance` tells the program to ignore force constants below this absolute value. Units are determined by LAMMPS.
 - `order` is the order of finite difference, e.g. 2, 3, 4.
 
 #### Outputs.
