@@ -349,9 +349,9 @@ void In::calcFC2()
     rc = mc->cutoff;
     order = mc->order;
     // Tolerances are hardcoded for now... May change later.
-    tol2 = 1e-10;
-    tol3 = 1e-10;
-    tol4 = 1e-10;
+    //tol2 = 1e-10;
+    //tol3 = 1e-10;
+    //tol4 = 1e-10;
     //printf("delta: %f\n",delta);
     int natoms = lmp->atom->natoms;
     double *pe_p;
