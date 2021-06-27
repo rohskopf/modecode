@@ -36,17 +36,17 @@ LIBS =
 .cpp.o:
 	${CXX} ${CXXFLAGS} ${INCLUDE} -c $<
 
-PROG = mc
+PROG = modecode
 
 CXXSRC= mc.cpp main.cpp mem.cpp in.cpp verify.cpp ifc2mcc.cpp asr.cpp compute.cpp tic.cpp qhgk.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 
-default: mc
+default: modecode
 
 all: ${PROG}
 
-mc: ${OBJS}
+modecode: ${OBJS}
 	${CXX} ${CXXFLAGS} -o $@ ${OBJS} ${LIBS} ${LAMMPSLIB}
 
 clean:
