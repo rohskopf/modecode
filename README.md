@@ -80,8 +80,8 @@ where
 
 - `P` is the number of processes to split the IFC calculations over.
 - `fd` refers to the finite difference task.
-- `delta` is the finite difference step size, anywhere from 0.0001 to 0.01 depending on the 
-  stiffness of your material. 
+- `delta` is the finite difference step size, a number depending on the 
+  stiffness of your material with the same units declared by LAMMPS in the INPUT file. 
 - `cutoff` is the interatomic interaction cutoff for force constants, in whatever units declared by
   LAMMPS.
 - `order` is the order of finite difference, e.g. 2, 3, 4.
