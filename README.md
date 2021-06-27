@@ -39,7 +39,7 @@ Go into src/ and install with:
     make clean
     make
 
-That's it! We just made a ModeCode executable called `mc`.
+That's it! We just made a ModeCode executable called `modecode`.
 
 # Using ModeCode
 
@@ -47,7 +47,7 @@ ModeCode is simple - you declare a calculation task and settings and must have a
 
 The general format for running ModeCode is to do:
 
-    mpirun -np P mc task setting1 setting2 setting3 ...
+    mpirun -np P modecode task setting1 setting2 setting3 ...
 
 where 
 
@@ -74,7 +74,7 @@ This task uses finite difference to extract the 2nd, 3rd, or 4th order interatom
 
 The general use of this task is:
 
-    mpirun -np P mc fd delta cutoff order
+    mpirun -np P modecode fd delta cutoff order
 
 where 
 
@@ -99,7 +99,7 @@ self terms.
 
 The general use of this task is:
 
-    mc asr order
+    modecode asr order
 
 where 
 
@@ -138,7 +138,7 @@ This task computes various quantities associated with the modes.
 
 The general use of this task is:
 
-    mc compute compute_task setting1 setting2 ...
+    modecode compute compute_task setting1 setting2 ...
 
 where
 - `compute` refers to the compute task.
@@ -153,7 +153,7 @@ There are a few separate sub-tasks which will be explained here.
 
 Run with:
 
-    mc compute pr natoms
+    modecode compute pr natoms
 
 where
 - `pr` refers to the participation ratio sub-task.
@@ -163,7 +163,7 @@ where
 
 Run with:
 
-    mc compute esp
+    modecode compute esp
 
 where
 - `esp` refers to the ESP task.
@@ -191,13 +191,13 @@ Go into examples/Si_8atoms.
 
 ### 2nd order finite difference.
 
-    mpirun -np 2 mc fd 0.01 2
+    mpirun -np 2 modecode fd 0.01 2
 
 This creates the FC2 file.
 
 ### Acoustic sum rule correction.
 
-    mc asr 2
+    modecode asr 2
 
 This creates the FC2_ASR file, same as FC2 but with self-terms. 
 
