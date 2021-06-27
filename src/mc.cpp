@@ -130,13 +130,16 @@ void MC::run(int nargs, char **args)
 {
 
   if (task=="fd"){
-    if (nargs!=5){
-        printf(" Need 5 arguments for FD! fd delta cutoff order\n");
+    if (nargs!=6){
+        printf(" Need 6 arguments for FD! fd delta cutoff tolerance order\n");
         exit(1);
     }
     delta = atof(args[2]);
     cutoff = atof(args[3]);
-    order = atoi(args[4]);
+    order = atoi(args[5]);
+    if (order == 2) in->tol2 = atof(args[4]);
+    if (order == 3) in->tol3 = atof(args[4]);
+    if (order == 4) in->tol4 = atof(args[4]);
     if (rank==0){
       printf(" Performing %d order FD on %d procs.\n",order,nprocs);
       printf(" Cutoff: %f\n", cutoff);

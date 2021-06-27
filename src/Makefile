@@ -6,15 +6,15 @@
 #-----------------------------------------------
 
 # Enter the path to your LAMMPS directory
-LAMMPSDIR = /home/drew/lammps-5Jun19/src
+#LAMMPSDIR = /home/drew/lammps-5Jun19/src
 #LAMMPSDIR = /home/rohskopf/lammps/src
 #USE DEEPMD LAMMPS DIR IF YOU WANNA DO FC ON NNP. 
-#LAMMPSDIR = /home/rohskopf/deepmd_mod/lammps/src
+LAMMPSDIR = /home/rohskopf/deepmd_mod/lammps/src
 
 # Enter path to the shared library (.so) file
-LAMMPSLIB = /home/drew/lammps-5Jun19/src/liblammps_g++_openmpi.so
-#LAMMPSLIB = /home/rohskopf/lammps/src/liblammps_g++_openmpi.soo
-#LAMMPSLIB = /home/rohskopf/deepmd_mod/lammps/src/liblammps_g++_openmpi.so
+#LAMMPSLIB = /home/drew/lammps-5Jun19/src/liblammps_g++_openmpi.so
+#LAMMPSLIB = /home/rohskopf/lammps/src/liblammps_g++_openmpi.so
+LAMMPSLIB = /home/rohskopf/deepmd_mod/lammps/src/liblammps_g++_openmpi.so
 
 #-----------------------------------------------
 
