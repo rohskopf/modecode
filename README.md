@@ -36,6 +36,7 @@ installation.
 
 Go into src/ and install with:
 
+    make clean
     make
 
 That's it! We just made a ModeCode executable called `mc`.
