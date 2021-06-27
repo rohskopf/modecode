@@ -74,7 +74,7 @@ This task uses finite difference to extract the 2nd, 3rd, or 4th order interatom
 
 The general use of this task is:
 
-    mpirun -np P modecode fd delta cutoff order
+    mpirun -np P modecode fd delta cutoff tolerance order
 
 where 
 
@@ -84,6 +84,7 @@ where
   stiffness of your material with the same units declared by LAMMPS in the INPUT file. 
 - `cutoff` is the interatomic interaction cutoff for force constants, in whatever units declared by
   LAMMPS.
+- `tolerance` tells the program to ignore force constants below this absolute value.
 - `order` is the order of finite difference, e.g. 2, 3, 4.
 
 #### Outputs.
