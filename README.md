@@ -91,6 +91,8 @@ where
 
 - FC2, FC3, or FC4 depending on the `order` parameter.
 
+**These FC files are converted from LAMMPS metal units to Ryd/Bohr units internally inside in.cpp."
+
 ***
 
 ### Acoustic sum rule (`asr`) task.
@@ -121,10 +123,11 @@ This task diagonalizes the dynamical matrix to get the mode frequencies and eige
 Currently this is not implemented in the C++ code; we use a simple Python script instead. 
 
 See tools/calc_eig3.py.
-This takes FC2_ASR, DATA (LAMMPS data file), and then you must edit the molecular weights to 
-get the desired dynamical matrix. Simply do:
+This takes FC2_ASR, DATA (LAMMPS data file), and you must ensure in the script that your units are what is desired. Simply do:
 
-    python calc_eig3.py
+    python calc_eig.py
+
+The outputs here have SI units, if your force constants were in Ryd/Bohr^2 units.
 
 #### Outputs.
 
