@@ -17,27 +17,80 @@ def is_diagonally_dominant(x):
     return np.all( 2*np.diag(abs_x) >= np.sum(abs_x, axis=1) )
 
 
-#fh = open('FC2_FD, 'r')
+"""
+Read LAMMPS data file.
+"""
+nskip = 0 # Used by np.loadtxt soon.
+fh = open("DATA", 'r')
+# Ignore first line
+line = fh.readline()
+nskip+=1
+# Next line is empty.
+line = fh.readline()
+nskip+=1
+# Get number of atoms.
+line = fh.readline()
+nskip+=1
+natoms = int(line.split()[0])
+print("%d atoms." % (natoms))
+# Find line with atom types
+while ("types" not in line):
+  line = fh.readline()
+  nskip+=1
+ntypes = int(line.split()[0])
+print("%d atom types." % (ntypes))
+# Find masses.
+while ("Masses" not in line):
+  line = fh.readline()
+  nskip+=1
+# Skip next line.
+line = fh.readline()
+nskip+=1
+# Store masses.
+masses_types = []
+for t in range(0,ntypes):
+  line = fh.readline()
+  nskip+=1
+  masses_types.append( float(line.split()[1]) )
+masses_types = np.array(masses_types)
+print("Masses of types:")
+print(masses_types)
+# Find atoms.
+while ("Atoms" not in line):
+  line = fh.readline()
+  nskip+=1
+# Skip next line.
+line = fh.readline()
+nskip+=1
+print("Should skip %d lines to read atoms." % (nskip))
+fh.close()
 
 natoms = 8
-#mass = 4.6637066e-26
-mws1 = 28.0855 # Si
-mws2 = 15.999 # O
-mws = np.zeros(natoms)
-mws[0:natoms]=mws1
+data = np.loadtxt('DATA', skiprows=nskip)
+print(data)
+types = data[:,1]
+print(types)
+
+masses = np.zeros(natoms)
+for i in range(0,natoms):
+  masses[i]=masses_types[int(types[i]-1)]
+print(masses)
+
 #mws[184:328]=mws2
 # Convert mws [kg/kmol] to kg
 nav = 6.0221409e+23 # number/mol
-mass = mws/(nav*1e3)
-#print(mass)
+mass = masses/(nav*1e3)
 
+#print(mws[799])
+#mass = np.ones(natoms)
+#mass = mass*4.6637066e-26
 
 #line = fh.readline()
 
 dm = np.zeros([natoms*3,natoms*3]) # dynamical matrix
 
 nfc2 = -1
-with open('FC2') as fh:
+with open('FC2_ASR') as fh:
     for line in fh:
         nfc2 = nfc2+1
         if (nfc2 != 0):
@@ -48,8 +101,19 @@ with open('FC2') as fh:
             j = int(line_split[2])-1
             b = int(line_split[3])-1
             fc = float(line_split[4])*(2.179874099E-18)*1.89e+10*1.89e+10 # Convert Ryd/Bohr^2 to J/m^2
+            #fc = float(line_split[4])*13.605698066*(1./0.529177249)*(1./0.529177249); # Convert Ryd/Bohr^2 to eV/A^2;;
             #print(fc)
             dm[3*i+a][3*j+b]=fc/(np.sqrt(mass[i]*mass[j]))
+
+            # Enforce symmetry
+            dm[3*j+b][3*i+a]=dm[3*i+a][3*j+b]
+
+            """
+            ii = 3*i+a
+            jj = 3*j+b
+            if (ii!=jj):
+                dm[3*j+b][3*i+a]=dm[
+            """
 
 w, v = LA.eigh(dm)
 
@@ -142,7 +206,11 @@ x = np.arange(0,natoms*3)
 w = np.lib.scimath.sqrt(w)
 w = w/(2*np.pi)
 w = w/1e12
+np.savetxt('FREQUENCIES', np.real(w), delimiter='\n')
+
+"""
 plt.scatter(x, w)
 plt.ylabel("Frequency (THz)")
 plt.xlabel("Mode")
 plt.show()
+"""
