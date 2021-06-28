@@ -91,7 +91,7 @@ where
 
 - FC2, FC3, or FC4 depending on the `order` parameter.
 
-**These FC files are converted from LAMMPS metal units to Ryd/Bohr units internally inside in.cpp."
+**These FC files are converted from LAMMPS metal units to Ryd/Bohr units internally inside in.cpp.**
 
 ***
 
