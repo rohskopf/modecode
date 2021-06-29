@@ -179,7 +179,32 @@ where
 
 This task converts IFCs to mode coupling constants (MCCs), in various different ways.
 
-Documentation coming soon.
+There are many different ways of converting IFCs into MCCs, so we have many different options.
+
+Generally, do this with:
+
+    mpirun -np P modecode ifc2mcc subtask setting1 setting2 ...
+    
+where 
+- `subtask` refers to a particular sub-task (an integer).
+- `settings` are the settings for that sub-task.
+
+To simply convert IFCs to MCCs of any order, do:
+
+    mpirun -np P modecode ifc2mcc 0 order
+
+where
+- `order` is the Taylor expansion order of the IFCs.
+
+To calculate generalized velocities used in the Quasi-Harmonic Green Kubo formulation, do:
+
+    mpirun -np P modecode ifc2mcc 8 alpha
+
+where
+- `alpha` is the Cartesian direction of the generalized velocities.
+
+More subtasks will be documented.
+
 
 #### Outputs.
 
