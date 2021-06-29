@@ -218,8 +218,8 @@ void MC::run(int nargs, char **args)
 
       // Calculate generalized velocities. 
       if (ifc2mcc->task==8){
-          order = atoi(args[3]);
-          ifc2mcc->go_gv();  
+          //order = atoi(args[3]);
+          ifc2mcc->go_gv(atoi(args[3]));  
       }
 
   }

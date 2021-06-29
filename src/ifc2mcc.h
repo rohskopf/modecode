@@ -30,7 +30,7 @@ namespace MC_NS
     void extractFew(int,int);
     void calcFew();
     void go_spatial();
-    void go_gv(); // generalized velocities
+    void go_gv(int); // generalized velocities
     void go_n1(int);
     void extract_smcc2(int);
 

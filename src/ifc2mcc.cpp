@@ -1692,9 +1692,9 @@ unsigned long long int Ifc2mcc::nChoosek( unsigned long long int n, unsigned lon
 Calculate generalized velocities, similar to SMCC2s.
 */
 
-void Ifc2mcc::go_gv()
+void Ifc2mcc::go_gv(int alpha)
 {
-    order = mc->order;
+    order = 2;
 
     if (rank==0) printf(" Converting IFCs to GVs.\n");
 
@@ -1854,9 +1854,9 @@ void Ifc2mcc::go_gv()
                             mj = mass[type[j]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
 
                             //printf("Got mass.\n");
-                            disp = x[i][2]-x[j][2];
-                            if (std::abs(disp) > lmp->domain->boxhi[2]/2.0 && disp > 0) disp -= lmp->domain->boxhi[2];
-                            else if (std::abs(disp) > lmp->domain->boxhi[2]/2.0 && disp < 0) disp += lmp->domain->boxhi[2];
+                            disp = x[i][alpha]-x[j][alpha];
+                            if (std::abs(disp) > lmp->domain->boxhi[alpha]/2.0 && disp > 0) disp -= lmp->domain->boxhi[alpha];
+                            else if (std::abs(disp) > lmp->domain->boxhi[alpha]/2.0 && disp < 0) disp += lmp->domain->boxhi[alpha];
 
                             // printf("Got disp.\n");
                             mcc2_value += disp*1e-10*( (phi*emat[3*i+a][n1]*emat[3*j+b][n2])/sqrt(mi*mj) ); // m/s
