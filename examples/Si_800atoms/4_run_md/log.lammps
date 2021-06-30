@@ -1,5 +1,6 @@
+LAMMPS (5 Jun 2019)
 #echo screen
- 
+
 newton on
 boundary	 	 p p p
 units	 	 	 metal
@@ -7,6 +8,11 @@ atom_style	 	 atomic
 atom_modify map array
 
 read_data DATA
+  orthogonal box = (0 0 0) to (5.431 5.431 543.1)
+  1 by 1 by 4 MPI processor grid
+  reading atoms ...
+  800 atoms
+  read_data CPU = 0.00728726 secs
 
 neighbor    10.0 bin
 neigh_modify once yes
@@ -18,15 +24,25 @@ variable yhi equal 5.431000
 variable zhi equal 21.724000
 variable tol equal 0.0
 variable r1_zlo equal 0.0+${tol}
+variable r1_zlo equal 0.0+0
 variable r1_zhi equal ${zhi}/2.0-${tol}
+variable r1_zhi equal 21.724/2.0-${tol}
+variable r1_zhi equal 21.724/2.0-0
 variable r2_zlo equal ${zhi}/2.0+${tol}
+variable r2_zlo equal 21.724/2.0+${tol}
+variable r2_zlo equal 21.724/2.0+0
 variable r2_zhi equal ${zhi}-${tol}
+variable r2_zhi equal 21.724-${tol}
+variable r2_zhi equal 21.724-0
 
 # Define regions and groups
 region r1 block EDGE EDGE EDGE EDGE 0.0 10.842000
 region r2 block EDGE EDGE EDGE EDGE 10.852000 ${r2_zhi}
+region r2 block EDGE EDGE EDGE EDGE 10.852000 21.724
 group gA region r1 # Group A
+16 atoms in group gA
 group gB region r2 # Group B
+18 atoms in group gB
 
 # Computes
 #compute dsp all mode/atom
@@ -48,6 +64,7 @@ group gB region r2 # Group B
 
 pair_style tersoff
 pair_coeff * * Si.tersoff Si
+Reading potential file Si.tersoff with DATE: 2007-10-25
 
 # Initialize velocity, thermo settings, timestep and ensemble
 velocity	 all create 600 20101 rot yes mom yes
@@ -66,15 +83,11 @@ fix fixWp all wp 5e-2 0.91 30.0 67.0 50..0 5.431 2
 
 #fix test all mode -0.1 0.1 0.1 # Initialize mode temperatures
 
-# Run MD	 	 	 	 	  
-dump 1 all xyz 100 dump.xyz	
-dump 2 all custom 100 dump.forces fx fy fz 
+# Run MD
+dump 1 all xyz 100 dump.xyz
+dump 2 all custom 100 dump.forces fx fy fz
 #dump 3 all custom 1 dump.vel id vx vy vz
 #dump_modify 3 format float %20.15g scale yes
 dump_modify 2 sort id
 #dump_modify 3 sort id
 run 20000
-unfix 1
-undump 1
-
-#write_data Si.data

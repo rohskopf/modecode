@@ -43,3 +43,11 @@ Calculates Hardy's heat flux in mode coordinates, with generalized velocities as
 
 ## `fix wp`
 Creates a longitudinal wave-packet at finite temperature. 
+
+    fix fixname all wp amplitude kmagnitude width velocity z0 a0 direction
+    
+E.g. for crystalline silicon,
+
+    fix fixWp all wp 5e-2 0.91 30.0 67.0 50..0 5.431 2
+
+Launches the wave-packet in the z-direction (hence the "2" at the last argument). 
