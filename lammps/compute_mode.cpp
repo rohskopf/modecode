@@ -173,7 +173,7 @@ void ComputeMode::init()
   readfile.open("EQUIL");
 
   if (!readfile.is_open()) {
-      printf("Unable to open EMAT.\n");
+      printf("Unable to open EQUIL.\n");
       exit(1);
   }
 
@@ -194,7 +194,7 @@ void ComputeMode::init()
       }
   }
 
-  readfile2.open("EMAT");
+  readfile2.open("../EMAT");
   //readfile2.open("ev_real.txt");
 
   if (!readfile2.is_open()) {

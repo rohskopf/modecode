@@ -63,6 +63,7 @@ class FixWp : public Fix {
   FILE * fh_d; // debug
 
   double amp,k0,xi,vg,z0,a0; // WP parameters
+  int direction; // WP direction (0,1, or 2 for Cartesian directions)
 
  protected:
   double xvalue,yvalue,zvalue;

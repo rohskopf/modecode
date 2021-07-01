@@ -68,6 +68,7 @@ FixWp::FixWp(LAMMPS *lmp, int narg, char **arg) :
   vg = atof(arg[6]);
   z0 = atof(arg[7]);
   a0 = atof(arg[8]);
+  direction = atoi(arg[9]);
 
 
   char debug[64];
@@ -234,7 +235,7 @@ void FixWp::init()
   readfile.open("EQUIL");
 
   if (!readfile.is_open()) {
-      printf("Unable to open EMAT.\n");
+      printf("Unable to open EQUIL.\n");
       exit(1);
   }
 
@@ -259,6 +260,7 @@ void FixWp::init()
   //readfile2.open("ev_real.txt");
 
   if (!readfile2.is_open()) {
+      //printf("ASDFASDF");
       printf("Unable to open EMAT.\n");
       exit(1);
   }
@@ -490,7 +492,7 @@ void FixWp::post_force(int /*vflag*/)
         u = amp*np.exp(v1)*np.cos(v2);
         */
         
-        zp = x[i][0] - z0;
+        zp = x[i][direction] - z0;
         v1 = -1.0*eta*eta*zp*zp;
         v2 = k0*zp;
         v3 = 2.0*eta*eta*vg*zp;
@@ -517,12 +519,16 @@ void FixWp::post_force(int /*vflag*/)
         // Add to position and velocity
         //x[i][2] += uz;
         //v[i][2] = vz;
+        /*
         up[i][0] = uz;
         up[i][1] = 0;
         up[i][2] = 0;
         vp[i][0] = vz;
         vp[i][1] = 0;
         vp[i][2] = 0;
+        */
+        up[i][direction] = uz;
+        vp[i][direction] = vz;
         
         //if (uz>0 || vz>0){
         // fprintf(fh_d, "%e %e\n", uz,vz);
