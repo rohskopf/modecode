@@ -65,7 +65,7 @@ nskip+=1
 print("Should skip %d lines to read atoms." % (nskip))
 fh.close()
 
-natoms = 8
+#natoms = 8
 data = np.loadtxt('DATA', skiprows=nskip)
 print(data)
 types = data[:,1]
