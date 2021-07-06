@@ -225,12 +225,13 @@ void MC::run(int nargs, char **args)
   }
 
   if (task=="asr"){
-      if (nargs != 3){
-        printf("Need 3 args for ASR!\n");
+      if (nargs != 4){
+        printf("Need 3 args for ASR! modecode asr order tolerance\n");
         exit(1);
       }
       order = atoi(args[2]);
-      asr->go(order);
+      double tolerance = atof(args[3]);
+      asr->go(order, tolerance);
   }
 
   if (task=="compute"){

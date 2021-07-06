@@ -54,7 +54,7 @@ Asr::~Asr()
 Read FC files and store values
 */
 
-void Asr::go(int order_in)
+void Asr::go(int order_in, double tol)
 {
     
     order = order_in;
@@ -119,7 +119,7 @@ void Asr::go(int order_in)
     // Count number of self interactions above the tol
     int nfc2ii_tol=0;
     for (int w=0; w<9*natoms; w++){
-        if (abs(fc2ii[w].val)>mc->in->tol2) nfc2ii_tol++;
+        if (abs(fc2ii[w].val)>tol) nfc2ii_tol++;
     }
     printf(" nfc2ii_tol: %d\n", nfc2ii_tol);
 
@@ -129,11 +129,11 @@ void Asr::go(int order_in)
     // Write self interactions if they are above the tol
     fprintf(fh_fc2,"%d\n", nfc2+nfc2ii_tol);
     for (int w=0; w<9*natoms; w++){
-        if (abs(fc2ii[w].val)>mc->in->tol2) fprintf(fh_fc2, "%d %d %d %d %.12e\n", fc2ii[w].i+1,fc2ii[w].a+1,fc2ii[w].j+1,fc2ii[w].b+1,fc2ii[w].val);
+        if (abs(fc2ii[w].val)>tol) fprintf(fh_fc2, "%d %d %d %d %.10e\n", fc2ii[w].i+1,fc2ii[w].a+1,fc2ii[w].j+1,fc2ii[w].b+1,fc2ii[w].val);
     }
     // Write all other FCs
     for (int w=0; w<nfc2; w++){
-        fprintf(fh_fc2, "%d %d %d %d %.12e\n", fc2[w].i+1,fc2[w].a+1,fc2[w].j+1,fc2[w].b+1,fc2[w].val);
+        fprintf(fh_fc2, "%d %d %d %d %.10e\n", fc2[w].i+1,fc2[w].a+1,fc2[w].j+1,fc2[w].b+1,fc2[w].val);
     }
 
 }

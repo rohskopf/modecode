@@ -546,7 +546,7 @@ void In::calcFC2()
             fprintf(fh_fc2, "%d\n",nfc2_tol_total);
             for (int w=0; w<nfc2; w++){
                 if (abs(fc2_all[w].fc)>tol2){
-                    fprintf(fh_fc2, "%d    %d    %d    %d    %.10e\n", fc2_all[w].i+1,fc2_all[w].a+1,fc2_all[w].j+1,fc2_all[w].b+1,fc2_all[w].fc);
+                    fprintf(fh_fc2, "%d    %d    %d    %d    %e\n", fc2_all[w].i+1,fc2_all[w].a+1,fc2_all[w].j+1,fc2_all[w].b+1,fc2_all[w].fc);
                 }
             }
         }

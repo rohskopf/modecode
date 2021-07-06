@@ -22,7 +22,7 @@ namespace MC_NS
     FILE * fh_debug;
     FILE * fh_fc2;
 
-    void go(int);
+    void go(int, double);
     void readFcs();
 
     int order;  
