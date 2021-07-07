@@ -1,0 +1,26 @@
+set terminal png enhanced
+set output 'fvtot.png'
+
+stats 'fvtot.dat' nooutput
+#set xrange [-1e-40:1e-40]
+set xrange [0:100]
+#set yrange [-1e-25:1e-25]
+#set yrange [-1e-22:1e-22]
+set yrange [-1e-44:1e-44]
+#set yrange [1e-50:1e-20]
+#set logscale y
+#set yrange [-50:50]
+#set logscale y 10
+##set yrange [-1:1]
+set xlabel "Time (ps)" font "Hershey/Complex_Script"
+set ylabel "Transferred Power (eV/fs)" font "Hershey/Complex_Script"
+#set format y "%.0sx10^{%T}"
+#unset xtics
+unset key
+
+# Look up hexidecimal color codes
+plot 'fvtot.dat' using 1:2 pt 7 ps 1 lt rgb "#000000"
+     #'tm.dat' using 1:3 pt 7 ps 1 lt rgb "#0008FF", \
+     #'tm.dat' using 1:4 pt 7 ps 1 lt rgb "#DC0000", \
+     #'tm.dat' using 1:5 pt 7 ps 1 lt rgb "#0F7100", \
+     #'tm.dat' using 1:6 pt 7 ps 1 lt rgb "#533D8A"

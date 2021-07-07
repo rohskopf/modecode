@@ -188,7 +188,7 @@ void FixMode::init()
       }
   }
 
-  readfile2.open("EMAT");
+  readfile2.open("../EMAT");
   //readfile2.open("ev_real.txt");
 
   if (!readfile2.is_open()) {
