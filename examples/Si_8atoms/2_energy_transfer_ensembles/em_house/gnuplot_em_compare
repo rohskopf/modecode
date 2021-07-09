@@ -1,0 +1,29 @@
+set terminal png enhanced
+set termopt enhanced
+set output 'em_compare.png'
+
+#stats 'em.dat' nooutput
+#stats 'integrated_power.dat' nooutput
+#set xrange [-1e-40:1e-40]
+set xrange [0:10]
+#set yrange [-1e-25:1e-25]
+#set yrange [-1e-22:1e-22]
+set yrange [0:5e-2]
+#set yrange [1e-50:1e-20]
+#set logscale y
+#set yrange [-50:50]
+#set logscale y 10
+##set yrange [-1:1]
+set xlabel "Time (ps)" font "Hershey/Complex_Script"
+set ylabel "Mode Energy (eV)" font "Hershey/Complex_Script"
+#set format y "%.0sx10^{%T}"
+#unset xtics
+#set key outside
+
+# Look up hexidecimal color codes
+plot 'em_avg.dat' using 1:2 title "MD Simulation" pt 7 ps 1 lt rgb "#000000", \
+     'summ_avg.dat' using 1:2 title "Total" pt 7 ps 1.5 lt rgb "#FF0000"
+     # Blue: #0008FF
+     # Red: #b30000
+     #'tm.dat' using 1:5 pt 7 ps 1 lt rgb "#0F7100", \
+     #'tm.dat' using 1:6 pt 7 ps 1 lt rgb "#533D8A"

@@ -1,0 +1,24 @@
+First calculate the 2nd order force constants:
+
+    mpirun -np 4 modecode fd 0.001 3.0 1e-8 2 > outfile_ifc2
+
+Perform acoustic sum rule correction:
+
+    modecode asr 2
+
+Calculate the modes:
+
+    python calc_eig.py
+
+Calculate the 3rd order force constants:
+
+    mpirun -np 4 modecode fd 0.001 3.0 1e-10 3 > outfile_ifc3
+
+Calculate MCC3s:
+
+    mkdir mcc3
+    mpirun -np 4 modecode ifc2mcc 0 3
+
+Extract MCC3s for modes in a range:
+
+    modecode ifc2mcc 1 3 23
