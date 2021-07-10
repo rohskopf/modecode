@@ -8,7 +8,7 @@ stats 'integrated_power.dat' nooutput
 set xrange [0:350]
 #set yrange [-1e-25:1e-25]
 #set yrange [-1e-22:1e-22]
-set yrange [-1e-3:0.006]
+set yrange [-0.001:0.01]
 #set yrange [1e-50:1e-20]
 #set logscale y
 #set yrange [-50:50]
@@ -22,9 +22,12 @@ set ylabel "Mode Energy (eV)" font "Hershey/Complex_Script"
 
 # Look up hexidecimal color codes
 plot 'em.dat' using 1:2 title "MD Simulation" pt 7 ps 1 lt rgb "#000000", \
-     'integrated_power.dat' using 1:3 title "ijk Energy Transfer" pt 7 ps 0.5 lt rgb "#b30000", \
-     'integrated_power.dat' using 1:2 title "ijj Energy Transfer" pt 7 ps 0.5 lt rgb "#0008FF", \
-     'integrated_power.dat' using 1:4 title "ikk Energy Transfer" pt 7 ps 0.5 lt rgb "#0F7100"
+     'integrated_fv_sum.dat' using 1:2 title "Total" pt 7 ps 1.5 lt rgb "#FF0000"
+     #'integrated_power.dat' using 1:3 title "iij Energy Transfer" pt 7 ps 0.5 lt rgb "#000000", \
+     #'integrated_power.dat' using 1:3 title "iik Energy Transfer" pt 7 ps 0.5 lt rgb "#000000", \
+     #'integrated_power.dat' using 1:3 title "ijk Energy Transfer" pt 7 ps 0.5 lt rgb "#b30000", \
+     #'integrated_power.dat' using 1:2 title "ijj Energy Transfer" pt 7 ps 0.5 lt rgb "#0008FF", \
+     #'integrated_power.dat' using 1:4 title "ikk Energy Transfer" pt 7 ps 0.5 lt rgb "#0F7100", \
      # Blue: #0008FF
      # Red: #b30000
      #'tm.dat' using 1:5 pt 7 ps 1 lt rgb "#0F7100", \

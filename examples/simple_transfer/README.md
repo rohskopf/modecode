@@ -32,6 +32,10 @@ file must be time-integrated to get the energy transfers, and this is achieved b
 
     python integrate2.py
 
-which creates integrated_power.dat. The integrated power may be viewed in gnuplot by doing
+which creates integrated_power.dat. Or to integrate the power transfer components, do
+
+    python integrate5.py
+
+which creates integrated_fv_sum.dat. This integrated power may be viewed in gnuplot by doing
 
     gnuplot < gnuplot_em_compare

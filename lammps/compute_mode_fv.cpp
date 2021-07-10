@@ -168,11 +168,12 @@ void ComputeModeFv::init()
       }
   }
 
-  readfile2.open("EMAT");
+  readfile2.open("../EMAT");
   //readfile2.open("ev_real.txt");
 
   if (!readfile2.is_open()) {
       printf("Unable to open EMAT.\n");
+      //printf("ASDF\n");
       exit(1);
   }
 
@@ -206,7 +207,7 @@ void ComputeModeFv::init()
 
   /* MCC3 */
 
-  ifstream fh_mcc3("MCC3");
+  ifstream fh_mcc3("../MCC3");
   string line;
   nmcc3 = 0;
   while (getline(fh_mcc3, line))
@@ -221,7 +222,7 @@ void ComputeModeFv::init()
   fh_mcc3.close();
 
   ifstream readfile6;
-  readfile6.open("MCC3");
+  readfile6.open("../MCC3");
 
   for (int n=0; n<nmcc3; n++){
     readfile6 >> mcc3[n].i >> mcc3[n].j >> mcc3[n].k >> mcc3[n].val;
@@ -372,15 +373,73 @@ double ComputeModeFv::compute_scalar()
     fprintf(fh_fv, " %0.2f ", 0.5*update->ntimestep*1e-3);
     //printf(" %d\n", nmcc3);
     int counter = 0;
+    int n_indx, m_indx, l_indx;
+    int n,m,l;
     //for (int n=0; n<nmcc3; n++){
-    for (int n=0; n<nmcc3; n++){
+    for (int s=0; s<nmcc3; s++){
+
+      // Calculate power transfer
+      /*
       i=mcc3[n].i;
       j=mcc3[n].j;
       k=mcc3[n].k;
       //printf("%e\n", mcc3[n].val);
       //if (abs(mcc3[n].val)>1e48){
       //printf("ASDF\n");
-      fv = -1.0*mcc3[n].val*xm[j]*xm[k]*1e-10*1e-10*vm[i]*100*6.242e+6; // eV/ps
+      fv = -1.0*mcc3[s].val*xm[j]*xm[k]*1e-10*1e-10*vm[i]*100*6.242e+6; // eV/ps
+      */
+      n=mcc3[s].i;
+      m=mcc3[s].j;
+      l=mcc3[s].k;
+      //fv = -(1.0/2.0)*mcc3[s].val*xm[m]*xm[l]*1e-10*1e-10*vm[n]*100*6.242e+6; // eV/ps
+      fv = -(1.0/1.0)*mcc3[s].val*xm[m]*xm[l]*1e-10*1e-10*vm[n]*100*6.242e+6; // eV/ps
+
+
+      /*
+      // This code block uses the entire MCC3 matrix
+      // Find index of "n" (the mode under consideration)
+      // Also assign m and l indices accordingly.
+      if (mcc3[s].i==10){ 
+        n_indx=0;
+        m_indx=1;
+        l_indx=2;
+        n=mcc3[s].i;
+        m=mcc3[s].j;
+        l=mcc3[s].k;
+      }
+      else if (mcc3[s].j==10){ 
+        n_indx=1;
+        m_indx=0;
+        l_indx=2;
+        n=mcc3[s].j;
+        m=mcc3[s].i;
+        l=mcc3[s].k;
+      }
+      else if (mcc3[s].k==10){ 
+        n_indx=2;
+        m_indx=0;
+        l_indx=1;
+        n=mcc3[s].k;
+        m=mcc3[s].i;
+        l=mcc3[s].j;
+      }
+      //printf("%d %d %d\n", n,m,l);
+      
+      if (mcc3[s].i==10){
+        fv = -(1.0/1.0)*mcc3[s].val*xm[m]*xm[l]*1e-10*1e-10*vm[n]*100*6.242e+6; // eV/ps
+      }
+      else{ 
+        fv=0.0;
+      }
+
+      // Playing around with other expressions (this one doesn't work).
+      //fv = -(1.0/3.0)*mcc3[s].val*(  xm[m]*xm[l]*vm[n] - xm[n]*xm[l]*vm[m])*1e-10*1e-10*100*6.242e+6; // eV/ps
+      */
+      
+      
+
+
+      // print the power transfers.
       fprintf(fh_fv, "%e ", fv);
       counter++;
       //}

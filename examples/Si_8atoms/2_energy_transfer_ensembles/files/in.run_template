@@ -6,7 +6,7 @@ units	 	 	 metal
 atom_style	 	 atomic
 atom_modify sort 1 1000.0
 
-read_data DATA_1x1x100
+read_data DATA
 
 # Variables
 variable xhi equal 5.431
@@ -31,14 +31,14 @@ group gA region r1 # Group A
 group gB region r2 # Group B
 
 # Neighborlist commands
-neighbor    3.0 bin
+neighbor    1.0 bin
 neigh_modify once yes
 
 # Potential
 #pair_style tersoff2  
 #pair_coeff * * Si.tersoff Si Si2
 pair_style tersoff
-pair_coeff * * Si.tersoff Si Si2
+pair_coeff * * Si.tersoff Si
 
 # Computes
 #compute dsp all mode/atom
@@ -59,7 +59,7 @@ compute modeCompute all mode 0
 compute modeFv all mode/fv
 
 # Initialize velocity, thermo settings, timestep and ensemble
-#velocity	 all create 600 10101 rot yes mom yes
+velocity	 all create 100 ~ rot yes mom yes
 thermo  	 20 # Compute FV and mode quantities every 20 ps
 #thermo_style custom step c_ke_A c_ke_B c_pe_A c_pe_B c_flux[1] c_flux[2] c_flux[3] #ke press vol temp
 thermo_style custom step etotal c_modeCompute c_modeFv #ke press vol temp
@@ -72,7 +72,7 @@ timestep  0.0005
 #fix 2 all momentum 1 linear 1 1 1 rescale
 
 # Run MD	 	 	 	 	  
-#dump 1 all xyz 100 dump.xyz	
+dump 1 all xyz 100 dump.xyz	
 #dump_modify 1 format line "%ld %.9f %.9f %.9f"	 
 #dump 2 all custom 100 dump.velocities vx vy vz
 #dump 3 all custom 100 dump.force fx fy fz
@@ -84,7 +84,7 @@ timestep  0.0005
 
 fix test all mode -0.1 0.1 0.1 # Initialize mode temperatures
 
-run 700000
+run 20000
 #run 2000
 unfix 1
 #undump 1

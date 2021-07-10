@@ -1,0 +1,24 @@
+set terminal gif animate delay 2
+set output 'em2.gif'
+set key off # turns legend off
+
+stats 'em2.dat' nooutput
+#set xrange [-1e-40:1e-40]
+set xrange [1:16.2]
+#set yrange [-1e-25:1e-25]
+#set yrange [-1e-22:1e-22]
+set yrange [0:1e-2]
+#set yrange [1e-50:1e-20]
+#set logscale y
+#set yrange [-50:50]
+#set logscale y 10
+##set yrange [-1:1]
+set xlabel "Frequency (THz)" font "Hershey/Complex_Script"
+set ylabel "Energy (eV)" font "Hershey/Complex_Script"
+#set format y "%.0sx10^{%T}"
+#unset xtics
+
+do for [i=1:int(STATS_blocks)] {
+    plot 'em2.dat' using 2:3 index (i-1) pt 7 ps 1 lt -1
+
+}

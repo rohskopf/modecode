@@ -1,8 +1,9 @@
 import numpy as np
+import sys
 
 em_list = []
 summ_list = []
-for i in range(1,10+1):
+for i in range(1,int(sys.argv[1])+1):
 
   em_name = "em%d.dat" % (i)
   summ_name = "summ%d.dat" % (i)

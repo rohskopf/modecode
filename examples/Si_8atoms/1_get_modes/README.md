@@ -19,6 +19,18 @@ Calculate MCC3s:
     mkdir mcc3
     mpirun -np 4 modecode ifc2mcc 0 3
 
-Extract MCC3s for modes in a range:
+Extract all MCC3s (a symmetric matrix) for modes in a range:
 
-    modecode ifc2mcc 1 3 23
+    #modecode ifc2mcc 1 3 23 # if you wanna get all of them.
+    modecode ifc2mcc 1 10 10 # to get MCC3s for mode 10.
+
+Rename MCC3 file for next step:
+
+    mv MCC3 MCC3_10
+
+Get the unique MCC3s (e.g. ijk is the same as ikj), for use in MD calculations:
+
+    python get_unique.py
+
+This creates a new file called MCC3, which will be used in the LAMMPS calculations next.
+

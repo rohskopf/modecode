@@ -8,7 +8,7 @@ set output 'em_compare.png'
 set xrange [0:10]
 #set yrange [-1e-25:1e-25]
 #set yrange [-1e-22:1e-22]
-set yrange [0:5e-2]
+set yrange [0:0.05]
 #set yrange [1e-50:1e-20]
 #set logscale y
 #set yrange [-50:50]
