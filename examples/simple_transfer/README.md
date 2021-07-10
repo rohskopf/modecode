@@ -7,7 +7,9 @@ excited mode is an interface mode.
 First you must calculate the modes for this Si/Ge superlattice to obtain the EMAT file, which is not
 included here due to the large file size. To do this,
 follow the same procedure in `modecode/examples/Si_8atoms` to get the eigenvectors (EMAT) and 
-frequencies.
+frequencies. Or, simply download the EMAT file from:
+
+    https://www.dropbox.com/sh/jx24i7e5sb8ywid/AAB_NZLfEkQwlft_fybIFI5Ja?dl=0
 
 ModeCode may
 also be used to get the MCC3s, but they are also supplied here for the modes of interest. The EMAT
