@@ -32,7 +32,6 @@ class ComputeModeHf : public Compute {
   void compute_vector();
 
   int rank;
-  int order;
 
   double **emat; // eigenvectors
   double **x0; // equilibrium positions

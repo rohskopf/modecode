@@ -50,7 +50,7 @@ ComputeModeHf::ComputeModeHf(LAMMPS *lmp, int narg, char **arg) :
   Compute(lmp, narg, arg),
   id_ke(NULL), id_pe(NULL), id_stress(NULL)
 {
-  if (narg != 7) error->all(FLERR,"Illegal compute mode command");
+  if (narg != 6) error->all(FLERR,"Illegal compute mode command");
 
   vector_flag = 1;
   size_vector = 6;
@@ -70,8 +70,6 @@ ComputeModeHf::ComputeModeHf(LAMMPS *lmp, int narg, char **arg) :
   n = strlen(arg[5]) + 1;
   id_stress = new char[n];
   strcpy(id_stress,arg[5]);
-
-  order = atoi(arg[6]);
 
   int ike = modify->find_compute(id_ke);
   int ipe = modify->find_compute(id_pe);
@@ -134,9 +132,7 @@ ComputeModeHf::~ComputeModeHf()
   memory->destroy(miflux);
   memory->destroy(tm);
   memory->destroy(em);
-  if (order > 2){
-    memory->destroy(mcc3);
-  }
+  memory->destroy(mcc3);
 
   memory->destroy(sidemap);
   memory->destroy(regions);
@@ -175,7 +171,7 @@ void ComputeModeHf::init()
   c_pe = modify->compute[ipe];
   c_stress = modify->compute[istress];
 
-  int natoms = atom->natoms;
+  int natoms = atom->nlocal;
 
   if (universe->me == 0) {
     printf("--------------------------- %d -----------------------------\n", universe->me);
@@ -224,7 +220,7 @@ void ComputeModeHf::init()
   readfile.open("EQUIL");
 
   if (!readfile.is_open()) {
-      printf("Unable to open EQUIL.\n");
+      printf("Unable to open EMAT.\n");
       exit(1);
   }
 
@@ -245,7 +241,7 @@ void ComputeModeHf::init()
       }
   }
 
-  readfile2.open("../EMAT");
+  readfile2.open("EMAT");
   //readfile2.open("ev_real.txt");
 
   if (!readfile2.is_open()) {
@@ -327,7 +323,7 @@ void ComputeModeHf::init()
 
   /* MCC2 */
 
-  ifstream fh_mcc2("../SMCC2");
+  ifstream fh_mcc2("MCC2");
   string line;
   nmcc2 = 0;
   while (getline(fh_mcc2, line))
@@ -342,7 +338,7 @@ void ComputeModeHf::init()
   fh_mcc2.close();
 
   ifstream readfile7;
-  readfile7.open("../SMCC2");
+  readfile7.open("MCC2");
 
   for (int n=0; n<nmcc2; n++){
     readfile7 >> mcc2[n].i >> mcc2[n].j >> mcc2[n].val;
@@ -354,32 +350,31 @@ void ComputeModeHf::init()
   /* MCC3 */
 
   
-  if (order > 2){
-    ifstream fh_mcc3("../SMCC3");
-    //string line;
-    nmcc3 = 0;
-    while (getline(fh_mcc3, line))
-    {
-        nmcc3=nmcc3+1;
-    }
-
-    printf("  Found %d MCC3s.\n", nmcc3);
-
-    memory->create(mcc3,nmcc3,"mode:mcc3");
-
-    fh_mcc3.close();
-
-    ifstream readfile6;
-    readfile6.open("../SMCC3");
-
-    for (int n=0; n<nmcc3; n++){
-      readfile6 >> mcc3[n].i >> mcc3[n].j >> mcc3[n].k >> mcc3[n].val;
-    }
-
-    readfile6.close();
+  ifstream fh_mcc3("MCC3");
+  //string line;
+  nmcc3 = 0;
+  while (getline(fh_mcc3, line))
+  {
+      nmcc3=nmcc3+1;
   }
 
-  // FC2
+  printf("  Found %d MCC3s.\n", nmcc3);
+
+  memory->create(mcc3,nmcc3,"mode:mcc3");
+
+  fh_mcc3.close();
+
+  ifstream readfile6;
+  readfile6.open("MCC3");
+
+  for (int n=0; n<nmcc3; n++){
+    readfile6 >> mcc3[n].i >> mcc3[n].j >> mcc3[n].k >> mcc3[n].val;
+  }
+
+  readfile6.close();
+
+
+  /* FC2*/
 
   ifstream fh_fc2("FC2");
   //string line;
@@ -418,7 +413,7 @@ void ComputeModeHf::init()
   }
   
 
-  // FC3
+  /* FC3*/
 
   ifstream fh_fc3("FC3");
   //string line;
@@ -590,35 +585,29 @@ void ComputeModeHf::compute_vector()
   //fprintf(fh_disp, "\n");-
   //fprintf(fh_disp, "Timestep: %d\n", update->ntimestep);
   //fprintf(fh_disp, "\n");
-  //printf("x0[%d]: %f %f %f\n", 17-1, x0[17-1][0], x0[17-1][1], x0[17-1][2]);
-  int iindx;
+  //printf("%d\n", nlocal);
   for (int i=0; i<nlocal; i++){
-    iindx = tag[i]-1;
-    //printf("%d %d %d\n", i, tag[i]-1,universe->me);
-    //printf("%d %d %f %f %f\n", i, iindx, x[i][0], x[i][1],x[i][2]);
+    //printf("i itag: %d %d\n", i, tag[i]-1);
     if (mask[i] & groupbit){ // This keeps the atoms in a particular group.
       //u_p[i]=0.0;
       //u[i] = 0.0; // zero the total coordinates
-      //printf("x[%d]: %f %f %f\n", i, x[i][0],x[i][1],x[i][2]);
-      //printf("x0[%d]: %f %f %f\n", tag[i]-1, x0[tag[i]-1][0], x0[tag[i]-1][1], x0[tag[i]-1][2]);
       for (int a=0; a<3; a++){
-        u_p[i][a] = (x[i][a]-x0[tag[i]-1][a]);
-        if (std::abs(u_p[i][a]) > domain->boxhi[a]/2.0 && u_p[i][a] > 0) u_p[i][a] -= domain->boxhi[a];
-        else if (std::abs(u_p[i][a]) > domain->boxhi[a]/2.0 && u_p[i][a] < 0) u_p[i][a] += domain->boxhi[a];
-
+        u[i][a] = (x[i][a]-x0[i][a]);
+        if (std::abs(u[i][a]) > domain->boxhi[a]/2.0 && u[i][a] > 0) u[i][a] -= domain->boxhi[a];
+        else if (std::abs(u[i][a]) > domain->boxhi[a]/2.0 && u[i][a] < 0) u[i][a] += domain->boxhi[a];
         //u_p[i][a] = u_p[i][a]*1e-10;
 
         //fprintf(fh_disp,"%e ", x[i][a]-x0[i][a]);
       }
+      /*
+      if (update->ntimestep==2000){
+        fprintf(fh_disp, "%d %d %e %e %e\n",tag[i],type[i],x[i][0],x[i][1],x[i][2]);
+      }
+      */
+      
+
     }
   }
-  // Check displacements.
-  /*
-  for (int i=0; i<nlocal; i++){
-    printf("%f %f %f\n", u_p[i][0], u_p[i][1],u_p[i][2]);
-
-  }
-  */
 
 
   // NEED TO MAKE DISPLACEMENT VECTOR 1D!!!!!!!!
@@ -635,23 +624,38 @@ void ComputeModeHf::compute_vector()
     vm[n] = 0.0; // zero the total velocities
     fm_p[n]=0.0;
     fm[n] = 0.0; // zero the total forces
-    for (int i=0; i<nlocal; i++){
-      if (mask[i] & groupbit){ // This keeps the atoms in a particular group.
+    for (int i=0; i<natoms; i++){
+      //if (mask[i] & groupbit){ // This keeps the atoms in a particular group.
         for (int a=0; a<3; a++){
           //u[i][a] = u[i][a]*1e-10;
           double ms = mass[type[i]]; //mass[type[i]]*(1.0/6.0221409e+23)*1e-3;
           double masskg = mass[type[i]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
           //xm_p[n] += sqrt(mass[type[i]])*emat[3*i+a][n]*u[i][a]*1e-10*(1.0/6.0221409e+23)*1e-3; // Convert to SI units.;
           //xm_p[n] += sqrt(ms)*emat[3*i+a][n]*u_p[i][a]; // sqrt(kg/kmol) * Angstrom
-          xm_p[n] += sqrt(masskg)*emat[3*(tag[i]-1)+a][n]*u_p[i][a]; // sqrt(kg) * Angstrom
-          fm_p[n] += sqrt(ms)*emat[3*(tag[i]-1)+a][n]*f[i][a]; // sqrt(kg/kmol) * eV/A
+          //xm_p[n] += sqrt(masskg)*emat[3*i+a][n]*u_p[i][a]; // sqrt(kg) * Angstrom
+          xm_p[n] += sqrt(masskg)*emat[3*i+a][n]*u[i][a]; // sqrt(kg) * Angstrom
+          //fprintf(fh_debug, "%e\n", u_p[i][a]);
+          fm_p[n] += sqrt(ms)*emat[3*i+a][n]*f[i][a]; // sqrt(kg/kmol) * eV/A
           //fmi_p[natoms*n+i] = sqrt(ms)*emat[3*i+a][n]*f[i][a];
           //vm_p[n] += sqrt(masskg)*emat[3*i+a][n]*v[i][a]*100; // sqrt(kg) * m/s, since 1 A/ps = 100 m/s.
-          vm_p[n] += sqrt(masskg)*emat[3*(tag[i]-1)+a][n]*v[i][a]; // sqrt(kg) * A/ps
+          vm_p[n] += sqrt(masskg)*emat[3*i+a][n]*v[i][a]; // sqrt(kg) * A/ps
+
+          /*
+          if (n==7){
+            
+            fprintf(fh_xm, "n,i,a: %d,%d,%d\n", n,i,a);
+            fprintf(fh_xm, "  mass: %e\n", ms);
+            fprintf(fh_xm, "  emat[3*i+a][n]: %e\n", emat[3*i+a][n]);
+            fprintf(fh_xm, "  u: %e\n", u[i][a]);
+            fprintf(fh_xm, "  %e\n", xm_p[n]);
+            
+          }
+          */
           
         }
-      }
+      //}
     }
+
   }
 
   MPI_Allreduce(xm_p,xm,3*natoms,MPI_DOUBLE,MPI_SUM,world);
@@ -817,8 +821,6 @@ void ComputeModeHf::compute_vector()
   //fprintf(fh_tm, "\n");
   //fprintf(fh_tm, "\n");
   
-
-  /*
   fprintf(fh_em, "\n");
   fprintf(fh_em, "\n");  
   
@@ -828,7 +830,7 @@ void ComputeModeHf::compute_vector()
     //fprintf(fh_tm, "%d %e %e\n", n,freq[n],tm[n]);
     fprintf(fh_em, "%d %e %e\n", n,freq[n],em[n]);
   }
-  */
+  
 
   // SINGLE PLOT DAT FILES
   
@@ -869,88 +871,69 @@ void ComputeModeHf::compute_vector()
   //fprintf(fh_qtep, "%f %e\n", 0.5*update->ntimestep*1e-3, ht);
   */
 
-  /*
-  Interface modes:
-  (indices starting at 0)
-  73
-  74
-  76
-  77
-  */
-
   // Mode interaction heat transfer
-  if (universe->me == 0){
+  double ht = 0.0;
+  int n1,n2,n3;
+  double xn1,xn2,xn3;
+  double vn1,vn2,vn3;
+  double mcc;
+  for (int s=0; s<nmcc2; s++){
+    n1 = mcc2[s].i;
+    n2 = mcc2[s].j;
+    xn1 = xm[n1]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
+    xn2 = xm[n2]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
+    vn1 = vm[n1]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
+    vn2 = vm[n2]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
+    mcc = mcc2[s].val; // J/(kg*m^2)
+    // Multiply by 1.0 when comparing to TEP.
+    //ht += 1.0*mcc*xn2*vn1*6.242e+6; // eV/ps since 1 J/s = 6.242e+6 eV/ps
+    // Multiple by 2.0 when comparing to others?
+    ht += 1.0*mcc*xn2*vn1*6.242e+6; // eV/ps since 1 J/s = 6.242e+6 eV/ps
 
-    double ht = 0.0;
-    int n1,n2,n3;
-    double xn1,xn2,xn3;
-    double vn1,vn2,vn3;
-    double mcc;
-    for (int s=0; s<nmcc2; s++){
-      n1 = mcc2[s].i;
-      n2 = mcc2[s].j;
-      xn1 = xm[n1]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
-      xn2 = xm[n2]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
-      vn1 = vm[n1]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
-      vn2 = vm[n2]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
-      mcc = mcc2[s].val; // J/(kg*m^2)
-      // Multiply by 1.0 when comparing to TEP.
-      //ht += 1.0*mcc*xn2*vn1*6.242e+6; // eV/ps since 1 J/s = 6.242e+6 eV/ps
-      // Multiple by 2.0 when comparing to others?
-      if (abs(mcc)>1e24){
-      //if (n1!=73 && n1!=74 && n1!=76 && n1!=77 && n2!=73 && n2!=74 && n2!=76 && n2!=77){
-        ht += (1.0/2.0)*mcc*xn2*vn1*6.242e+6; // eV/ps since 1 J/s = 6.242e+6 eV/ps
-      //}
-      }
-
-      //printf("%d %f %f\n", s, mcc, ht);
-
-      if (update->ntimestep==200){
-        //fprintf(fh_debug, "%d %d %e %e %e\n", n1,n2,mcc,xm[n2],vm[n1]);
-      }
-
-      /*
-      if (abs(mcc)>1e24){
-        ht += mcc*xn2*vn1*6.241509e18*1e-12;
-      }
-      */
-
+    if (update->ntimestep==200){
+      //fprintf(fh_debug, "%d %d %e %e %e\n", n1,n2,mcc,xm[n2],vm[n1]);
     }
 
-    
-    if (order > 2){
-      for (int s=0; s<nmcc3; s++){
-        n1 = mcc3[s].i;
-        n2 = mcc3[s].j;
-        n3 = mcc3[s].k;
-        xn1 = xm[n1]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
-        xn2 = xm[n2]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
-        xn3 = xm[n3]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
-        vn1 = vm[n1]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
-        vn2 = vm[n2]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
-        vn3 = vm[n3]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
-        mcc = mcc3[s].val; // J/(kg^(3/2)*m^3
-        if (abs(mcc)>1e46){
-        //if (n1!=73 && n1!=74 && n1!=76 && n1!=77 && n2!=73 && n2!=74 && n2!=76 && n2!=77 && n3!=73 && n3!=74 && n3!=76 && n3!=77){
-          ht += (1.0/3.0)*mcc*xn3*xn2*vn1*6.242e+6; // eV/ps since 1 J/s = 6.242e+6 eV/ps
-        //}
-        }
-      }
+    /*
+    if (abs(mcc)>1e24){
+      ht += mcc*xn2*vn1*6.241509e18*1e-12;
     }
-    
-
-    fprintf(fh_fvtot, "%f %e\n", 0.5*update->ntimestep*1e-3, ht);
-
+    */
   }
+
+  
+  for (int s=0; s<nmcc3; s++){
+    n1 = mcc3[s].i;
+    n2 = mcc3[s].j;
+    n3 = mcc3[s].k;
+    xn1 = xm[n1]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
+    xn2 = xm[n2]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
+    xn3 = xm[n3]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
+    vn1 = vm[n1]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
+    vn2 = vm[n2]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
+    vn3 = vm[n3]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
+    mcc = mcc3[s].val; // J/(kg^(3/2)*m^3
+    ht += (1.0/3)*mcc*xn3*xn2*vn1*6.242e+6; // eV/ps since 1 J/s = 6.242e+6 eV/ps
+  }
+  
+
+  fprintf(fh_fvtot, "%f %e\n", 0.5*update->ntimestep*1e-3, ht);
+
   // TEP energy
-  /*
   double fc;
   double uia,uib,ujb;
   double pe_tot,pe_a,pe_b;
   pe_tot = 0.0;
   pe_a = 0.0;
   pe_b = 0.0;
-
+  /*
+  double f2[32][3];
+  for (int i=0; i<natoms; i++){
+    for (int a=0; a<3; a++){
+      f2[i][a] = 0.0;
+    }
+  }
+  */
   int i,j,k,a,b,c;
   for (int w=0; w<nfc2; w++){
 
@@ -976,13 +959,11 @@ void ComputeModeHf::compute_vector()
       pe_b += 0.5*fc*uia*ujb;
     }
     else{
-      printf("FUCK!\n");
+      printf("MESSED UP TEP!\n");
     }
     
   }
-  */
 
-  /*
   double ukc;
   for (int w=0; w<nfc3; w++){
 
@@ -1015,8 +996,8 @@ void ComputeModeHf::compute_vector()
     }
     
   }
-  */
-  //fprintf(fh_etep, "%.5f %f %f %f\n", 0.5*update->ntimestep*1e-3,pe_a,pe_b,pe_tot);
+
+  fprintf(fh_etep, "%.5f %e\n", 0.5*update->ntimestep*1e-3,pe_tot);
 
   /*
   for (int i=0; i<natoms; i++){

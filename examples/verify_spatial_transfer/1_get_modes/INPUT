@@ -1,0 +1,24 @@
+----------------------------------------LAMMPS SETUP COMMANDS
+    log none  
+
+    boundary p p p  
+    units metal  
+    atom_style atomic
+    atom_modify map array # This is required 
+    atom_modify sort 1 1000.0 # MAKE SURE YOU CHANGE THE SORT LENGTH TO EXTEND PAST THE BOX SIZE
+ 
+    compute P all pe 
+
+    read_data DATA
+
+    fix		1 all nve
+
+    neighbor 10.0 bin
+    neigh_modify once yes
+
+----------------------------------------LAMMPS PAIR STYLE COMMANDS
+
+pair_style tersoff  
+pair_coeff * * Si.tersoff Si Si2
+
+----------------------------------------END OF FILE

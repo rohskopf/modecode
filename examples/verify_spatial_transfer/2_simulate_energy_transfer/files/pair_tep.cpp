@@ -1,0 +1,1649 @@
+/* ----------------------------------------------------------------------
+   LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
+   http://lammps.sandia.gov, Sandia National Laboratories
+   Steve Plimpton, sjplimp@sandia.gov
+
+   Copyright (2003) Sandia Corporation.  Under the terms of Contract
+   DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
+   certain rights in this software.  This software is distributed under
+   the GNU General Public License.
+
+   See the README file in the top-level LAMMPS directory.
+------------------------------------------------------------------------- */
+
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "pair_tep.h"
+#include "atom.h"
+#include "comm.h"
+#include "force.h"
+#include "neigh_list.h"
+#include "memory.h"
+#include "error.h"
+#include "domain.h"
+#include "update.h"
+#include <math.h>       /* tanh, log */
+
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <vector>
+
+#define MAXLINE 1024
+
+using namespace LAMMPS_NS;
+using namespace std;
+
+/* ---------------------------------------------------------------------- */
+
+PairTep::PairTep(LAMMPS *lmp) : Pair(lmp)
+{
+  writedata = 1;
+
+  fh_debug = fopen("D_TEP", "w");
+  fh_pe = fopen("pe.dat", "w");
+  fh_pe3 = fopen("pe3.dat", "w");
+  fh_ht = fopen("ht.dat", "w");
+  fh_ht2 = fopen("ht2.dat", "w");
+  fh_ht3 = fopen("ht3.dat", "w");
+}
+
+/* ---------------------------------------------------------------------- */
+
+PairTep::~PairTep()
+{
+  if (allocated) {
+    memory->destroy(setflag);
+    memory->destroy(cutsq);
+
+    memory->destroy(cut);
+    memory->destroy(d0);
+    memory->destroy(alpha);
+    memory->destroy(r0);
+    memory->destroy(morse1);
+    memory->destroy(offset);
+
+    memory->destroy(fc2);
+    memory->destroy(fc3);
+    memory->destroy(phi);
+    memory->destroy(emat);
+
+    memory->destroy(u_p);
+    memory->destroy(u);
+    memory->destroy(xm_p);
+    memory->destroy(xm);
+    memory->destroy(vm_p);
+    memory->destroy(vm);
+    memory->destroy(fm_p);
+    memory->destroy(fm);
+    memory->destroy(psi);
+
+  }
+
+  fclose(fh_debug);
+  fclose(fh_pe);
+  fclose(fh_pe3);
+  fclose(fh_ht);
+  fclose(fh_ht2);
+  fclose(fh_ht3);
+}
+
+/* ---------------------------------------------------------------------- */
+
+void PairTep::compute(int eflag, int vflag)
+{
+  int i,j,ii,jj,kk,inum,jnum,itype,jtype;
+  int a,b;
+  int k,c;
+  int itag,jtag;
+  double xtmp,ytmp,ztmp,delx,dely,delz,evdwl,fpair;
+  double rsq,r,dr,dexp,factor_lj;
+  int *ilist,*jlist,*numneigh,**firstneigh;
+  double fc;
+
+  evdwl = 0.0;
+  if (eflag || vflag) ev_setup(eflag,vflag);
+  else evflag = vflag_fdotr = 0;
+
+  double **x = atom->x;
+  double **f = atom->f;
+  double **v = atom->v;
+  for (int i=0; i<32; i++){
+    fprintf(fh_debug, "%f %f %f\n", v[i][0],v[i][1],v[i][2]);
+
+  }
+  int *type = atom->type;
+  int *tag = atom->tag;
+  int nlocal = atom->nlocal;
+  double *special_lj = force->special_lj;
+  int newton_pair = force->newton_pair;
+  int natoms = atom->natoms;
+
+  inum = list->inum;
+  ilist = list->ilist;
+  numneigh = list->numneigh;
+  firstneigh = list->firstneigh;
+
+  double boxlo_x, boxlo_y, boxlo_z, boxhi_x, boxhi_y, boxhi_z;
+  boxlo_x = domain->boxlo[0];
+  boxlo_y = domain->boxlo[1];
+  boxlo_z = domain->boxlo[2];
+  boxhi_x = domain->boxhi[0];
+  boxhi_y = domain->boxhi[1];
+  boxhi_z = domain->boxhi[2];
+
+  double xi,yi,zi;
+  double xj,yj,zj;
+  double uix,uiy,uiz;
+  double ujx,ujy,ujz;
+  double ukx,uky,ukz;
+  double ux,uy,uz;
+  double uia, uib,ujb;
+  // loop over all atoms
+
+  //fh_umat = fopen("UMAT", "w");
+
+  double pe_a = 0.0;
+  double pe_b = 0.0;
+  double pe = 0.0;
+  double ht = 0.0;
+  double pe3 = 0.0;
+  double pe3_a = 0.0;
+  double pe3_b = 0.0;
+  double ht3 = 0.0;
+  for (int w=0; w<nfc2; w++){
+
+    /*
+    i = fc2[w].i;
+    j = fc2[w].j;
+    a = fc2[w].a;
+    b = fc2[w].b;
+    fc = fc2[w].fc;
+
+    itag = tag[i]-1;
+    jtag = tag[j]-1;
+    itype = type[itag];
+    jtype = type[jtag];
+
+    uia = x[i][a] - x0[itag][a];
+    uib = x[i][b] - x0[itag][b];
+
+    if (std::abs(uia) > boxhi_x/2.0 && uia > 0) uia -= boxhi_x;
+    else if (std::abs(uia) > boxhi_x/2.0 && uia < 0) uia += boxhi_x;
+
+    if (std::abs(uib) > boxhi_x/2.0 && uib > 0) uib -= boxhi_x;
+    else if (std::abs(uib) > boxhi_x/2.0 && uib < 0) uib += boxhi_x;
+
+    jtag = tag[j]-1;
+
+    ujb = x[j][b] - x0[jtag][b];
+
+    if (std::abs(ujb) > boxhi_x/2.0 && ujb > 0) ujb -= boxhi_x;
+    else if (std::abs(ujb) > boxhi_x/2.0 && ujb < 0) ujb += boxhi_x;
+
+    // TEP forces
+    f[i][a] -= fc*ujb;
+
+    // TEP energy
+    pe += 0.5*fc*uia*ujb;
+    if (type[itag]==1){
+      pe_a += 0.5*fc*uia*ujb;
+    }
+    else if (type[itag]==2){
+      pe_b += 0.5*fc*uia*ujb;
+    }
+    else{
+      printf("FUCK!\n");
+    }
+
+    if ( (i==1 && j==17) || (i==17 || j==1) ){
+      fprintf(fh_debug, "%d %d %d %d\n", i,a,j,b);
+      fprintf(fh_debug, "  %f\n", fc);
+    }
+    */
+
+    // Power transfer from A to B.
+    /*
+    // If i is in A, and j is in B, then compute Q_ij and add to total Q_AB.
+    if (itype==1 && jtype==2){ 
+        //printf("%d %d\n", tag[i],tag[j]);
+        //for (int a=0; a<3; a++){
+          //Q -= 0.5*( fij[a]*(v[i][a] + v[j][a]) );
+          //Q += 0.5*( fij[a]*(v[i][a] + v[j][a]) );
+        //}
+      ht += 1.0*fc*( (v[i][a]*ujb) - (v[j][a]*uib) );
+    }
+
+    // If i is in B, and j is in A, then compute Q_ji and add to total Q_AB.
+    
+    else if (itype==2 && jtype==1){ 
+        //printf("%d %d\n", tag[i],tag[j]);
+        //for (int a=0; a<3; a++){
+          //Q += 0.5*( fij[a]*(v[i][a] + v[j][a]) );
+        //}
+      ht -= 1.0*fc*( (v[i][a]*ujb) - (v[j][a]*uib) );
+    }
+    */
+
+    // This expression integrates to zero!
+    //ht += 1.0*fc*( (v[i][a]*ujb) - (v[j][a]*uib) );
+
+    // TITEP forces
+    //f[i][a] += fc*(uib-ujb);
+
+
+    // TITEP forces
+    //f[i][0] += 1.0*(fc2[ii][jj][0]*(uix-ujx) + fc2[ii][jj][1]*(uiy-ujy) + fc2[ii][jj][2]*(uiz-ujz));
+    //f[ii][1] += 1.0*(fc2[ii][jj][3]*(uix-ujx) + fc2[ii][jj][4]*(uiy-ujy) + fc2[ii][jj][5]*(uiz-ujz));
+    //f[ii][2] += 1.0*(fc2[ii][jj][6]*(uix-ujx) + fc2[ii][jj][7]*(uiy-ujy) + fc2[ii][jj][8]*(uiz-ujz));
+
+    
+  }
+
+  //printf("%e %e %e %e\n", pe_a, pe_b, pe_a+pe_b, pe);
+
+
+  double fij[3],fji[3];
+  double qij=0.0;
+  /*
+  for (int i=0; i<32; i++){
+    itag = tag[i]-1;
+    itype = type[i];
+    //if (i==8){
+      //fprintf(fh_debug, "i itag: %d %d\n", i,itag);
+      //fprintf(fh_debug,"  %f %f %f\n", x[i][0],x[i][1],x[i][2]);
+      //fprintf(fh_debug,"  %d\n", itype);
+      //fprintf(fh_debug,"  %f %f %f\n", v[i][0],v[i][1],v[i][2]);
+    //}
+
+    for (int j=0; j<32; j++){
+      fij[0]=0.0;
+      fij[1]=0.0;
+      fij[2]=0.0;
+      fji[0]=0.0;
+      fji[1]=0.0;
+      fji[2]=0.0;
+      qij = 0.0;
+
+      //itag = tag[i]-1;
+      jtag = tag[j]-1;
+      //itype = type[itag];
+      jtype = type[j];
+      //fprintf(fh_debug,"%d %d %d %d\n", i,j,itag,jtag);
+      for (int a=0; a<3; a++){
+        for (int b=0; b<3; b++){
+          fc = phi[itag][jtag][a][b];
+
+          if (i==8){
+            //fprintf(fh_debug, "%d %d %d %d %f\n", i+1,a+1,j+1,b+1,fc);
+          }
+
+          uia = x[i][a] - x0[i][a];
+          uib = x[i][b] - x0[i][b];
+
+          if (std::abs(uia) > boxhi_x/2.0 && uia > 0) uia -= boxhi_x;
+          else if (std::abs(uia) > boxhi_x/2.0 && uia < 0) uia += boxhi_x;
+
+          if (std::abs(uib) > boxhi_x/2.0 && uib > 0) uib -= boxhi_x;
+          else if (std::abs(uib) > boxhi_x/2.0 && uib < 0) uib += boxhi_x;
+
+          jtag = tag[j]-1;
+
+          ujb = x[j][b] - x0[jtag][b];
+
+          if (std::abs(ujb) > boxhi_x/2.0 && ujb > 0) ujb -= boxhi_x;
+          else if (std::abs(ujb) > boxhi_x/2.0 && ujb < 0) ujb += boxhi_x;
+
+          // TEP forces
+          f[i][a] -= fc*ujb;
+
+          // TEP energy
+          pe += 0.5*fc*uia*ujb;
+          if (itype==1){
+            pe_a += 0.5*fc*uia*ujb;
+          }
+          else if (itype==2){
+            pe_b += 0.5*fc*uia*ujb;
+          }
+          //else{
+          //  printf("FUCK!\n");
+          //}
+
+          // Pairwise forces
+          fij[a] -= phi[i][j][a][b]*ujb;
+          fji[a] -= phi[j][i][a][b]*uib;
+
+          // pairwise power transfer
+          qij += 0.5*( (phi[i][j][a][b]*ujb*v[i][a]) - (phi[j][i][a][b]*uib*v[j][a]) );
+
+        } // b
+      } // a
+
+
+      
+      // This total HT integrates to zero.
+      //ht += v[j][0]*fji[0] + v[j][1]*fji[1] + v[j][2]*fji[2];
+      //ht -= v[i][0]*fij[0] + v[i][1]*fij[1] + v[i][2]*fij[2];
+      
+
+      //ht += qij;
+
+      
+      if (itype==1 && jtype==2){
+        ht += 0.5*qij;
+      }
+      else if (itype==2 && jtype==1){
+        ht -= 0.5*qij;
+      }
+      
+    }
+  }
+  */
+
+  
+  for (int w=0; w<nfc2; w++){
+
+    i = fc2[w].i;
+    j = fc2[w].j;
+    a = fc2[w].a;
+    b = fc2[w].b;
+    fc = fc2[w].fc;
+
+    itype = type[i];
+    jtype = type[j];
+
+    uia = x[i][a] - x0[i][a];
+    uib = x[i][b] - x0[i][b];
+
+    if (std::abs(uia) > boxhi_x/2.0 && uia > 0) uia -= boxhi_x;
+    else if (std::abs(uia) > boxhi_x/2.0 && uia < 0) uia += boxhi_x;
+
+    if (std::abs(uib) > boxhi_x/2.0 && uib > 0) uib -= boxhi_x;
+    else if (std::abs(uib) > boxhi_x/2.0 && uib < 0) uib += boxhi_x;
+
+    jtag = tag[j]-1;
+
+    ujb = x[j][b] - x0[jtag][b];
+
+    if (std::abs(ujb) > boxhi_x/2.0 && ujb > 0) ujb -= boxhi_x;
+    else if (std::abs(ujb) > boxhi_x/2.0 && ujb < 0) ujb += boxhi_x;
+
+    // TEP forces
+    f[i][a] -= fc*ujb;
+
+    // TEP energy
+    pe += 0.5*fc*uia*ujb;
+    if (itype==1){
+      pe_a += 0.5*fc*uia*ujb;
+    }
+    else if (itype==2){
+      pe_b += 0.5*fc*uia*ujb;
+    }
+    //else{
+    //  printf("FUCK!\n");
+    //}
+
+    // Pairwise forces
+    fij[a] -= phi[i][j][a][b]*ujb;
+    fji[a] -= phi[j][i][a][b]*uib;
+
+    // pairwise power transfer (WORKS)
+    /*
+    qij = 0.5*( (phi[i][j][a][b]*ujb*v[i][a]) - (phi[j][i][a][b]*uib*v[j][a]) );
+    if (itype==1 && jtype==2){
+      ht += 0.5*qij;
+    }
+    else if (itype==2 && jtype==1){
+      ht -= 0.5*qij;
+    }
+    */
+
+    // SIMPLER AND ALSO WORKS!
+    if (itype==1 && jtype==2){
+      ht += 0.5*phi[i][j][a][b]*ujb*v[i][a];
+    }
+    if (itype==2 && jtype==1){
+      ht -= 0.5*phi[i][j][a][b]*ujb*v[i][a];
+    }
+
+
+
+  } // for (int w=0; w<nfc2; w++){
+
+  double ukc;
+  if (order > 2){
+    for (int w=0; w<nfc3; w++){
+
+      i = fc3[w].i;
+      j = fc3[w].j;
+      a = fc3[w].a;
+      b = fc3[w].b;
+      k = fc3[w].k;
+      c = fc3[w].c;
+      fc = fc3[w].fc;
+
+      itype = type[i];
+      jtype = type[j];
+
+      uia = x[i][a] - x0[i][a];
+      uib = x[i][b] - x0[i][b];
+      ukc = x[k][c] - x0[k][c];
+
+      if (std::abs(uia) > boxhi_x/2.0 && uia > 0) uia -= boxhi_x;
+      else if (std::abs(uia) > boxhi_x/2.0 && uia < 0) uia += boxhi_x;
+
+      if (std::abs(uib) > boxhi_x/2.0 && uib > 0) uib -= boxhi_x;
+      else if (std::abs(uib) > boxhi_x/2.0 && uib < 0) uib += boxhi_x;
+
+      jtag = tag[j]-1;
+
+      ujb = x[j][b] - x0[jtag][b];
+
+      if (std::abs(ujb) > boxhi_x/2.0 && ujb > 0) ujb -= boxhi_x;
+      else if (std::abs(ujb) > boxhi_x/2.0 && ujb < 0) ujb += boxhi_x;
+
+      if (std::abs(ukc) > boxhi_x/2.0 && ukc > 0) ukc -= boxhi_x;
+      else if (std::abs(ukc) > boxhi_x/2.0 && ukc < 0) ukc += boxhi_x;
+
+      // TEP forces
+      f[i][a] -= 0.5*fc*ujb*ukc;
+
+      // TEP energy
+      
+      pe += (1.0/6.0)*fc*uia*ujb*ukc;
+      if (itype==1){
+        pe_a += (1.0/6.0)*fc*uia*ujb*ukc;
+      }
+      else if (itype==2){
+        pe_b += (1.0/6.0)*fc*uia*ujb*ukc;
+      }
+
+      
+
+      // heat transfer from A to B.
+      
+      if (itype==1 && jtype==2){
+        //double sum1 = 0.0;
+        ht += (1.0/3.0)*fc*ujb*ukc*v[i][a];
+
+      }
+      if (itype==2 && jtype==1){
+        ht -= (1.0/3.0)*fc*ujb*ukc*v[i][a];
+      }
+      
+
+
+    } // for (int w=0; w<nfc3; w++){
+  } // if order > 2
+
+  
+
+  if (update->ntimestep % 1 == 0){
+    fprintf(fh_pe, "%.5f %e %e %e\n", 0.5*update->ntimestep*1e-3,pe_a,pe_b,pe);
+    fprintf(fh_pe3, "%.5f %e %e %e\n", 0.5*update->ntimestep*1e-3,pe3_a,pe3_b,pe3);
+  }
+
+
+  if (update->ntimestep % 1 == 0){
+    fprintf(fh_ht, "%.5f %e\n", 0.5*update->ntimestep*1e-3, ht);
+    fprintf(fh_ht3, "%.5f %e\n", 0.5*update->ntimestep*1e-3, ht3);
+  }
+
+  // Compute mode coordinates and velocities.
+  double *mass = atom->mass;
+  int *mask = atom->mask;
+
+  // Compute atomic displacements.
+  //fprintf(fh_disp, "\n");-
+  //fprintf(fh_disp, "Timestep: %d\n", update->ntimestep);
+  //fprintf(fh_disp, "\n");
+  for (int i=0; i<nlocal; i++){
+    //if (mask[i] & groupbit){ // This keeps the atoms in a particular group.
+      //u_p[i]=0.0;
+      //u[i] = 0.0; // zero the total coordinates
+      for (int a=0; a<3; a++){
+        u[i][a] = (x[i][a]-x0[i][a]);
+        //fprintf(fh_debug, "%f\n", u_p[i][a]);
+        if (std::abs(u[i][a]) > domain->boxhi[a]/2.0 && u[i][a] > 0) u[i][a] -= domain->boxhi[a];
+        else if (std::abs(u[i][a]) > domain->boxhi[a]/2.0 && u[i][a] < 0) u[i][a] += domain->boxhi[a];
+
+        //u_p[i][a] = u_p[i][a]*1e-10;
+
+        //fprintf(fh_disp,"%e ", x[i][a]-x0[i][a]);
+      }
+      //fprintf(fh_disp, "%e %e\n", x0[i][2],u_p[i][2]);
+    //}
+  }
+  // NEED TO MAKE DISPLACEMENT VECTOR 1D!!!!!!!!
+  //MPI_Allreduce(u_p,u,3*natoms,MPI_DOUBLE,MPI_SUM,world);
+
+  //printf(" natoms: %d\n", natoms);
+  // Mode coordinates, velocities, and forces. 
+  for (int n=0; n<3*natoms; n++){
+  //for (int n=7; n<8; n++){
+    //printf("n: %d\n", n);
+    xm_p[n]=0.0;
+    xm[n] = 0.0; // zero the total coordinates
+    vm_p[n]=0.0;
+    vm[n] = 0.0; // zero the total velocities
+    fm_p[n]=0.0;
+    fm[n] = 0.0; // zero the total forces
+    for (int i=0; i<natoms; i++){
+      //if (mask[i] & groupbit){ // This keeps the atoms in a particular group.
+        for (int a=0; a<3; a++){
+          //u[i][a] = u[i][a]*1e-10;
+          double ms = mass[type[i]]; //mass[type[i]]*(1.0/6.0221409e+23)*1e-3;
+          double masskg = mass[type[i]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
+          //xm_p[n] += sqrt(mass[type[i]])*emat[3*i+a][n]*u[i][a]*1e-10*(1.0/6.0221409e+23)*1e-3; // Convert to SI units.;
+          //xm_p[n] += sqrt(ms)*emat[3*i+a][n]*u_p[i][a]; // sqrt(kg/kmol) * Angstrom
+          //xm_p[n] += sqrt(masskg)*emat[3*i+a][n]*u_p[i][a]; // sqrt(kg) * Angstrom
+          xm_p[n] += sqrt(masskg)*emat[3*i+a][n]*u[i][a]; // sqrt(kg) * Angstrom
+          //fprintf(fh_debug, "%e\n", u_p[i][a]);
+          fm_p[n] += sqrt(ms)*emat[3*i+a][n]*f[i][a]; // sqrt(kg/kmol) * eV/A
+          //fmi_p[natoms*n+i] = sqrt(ms)*emat[3*i+a][n]*f[i][a];
+          //vm_p[n] += sqrt(masskg)*emat[3*i+a][n]*v[i][a]*100; // sqrt(kg) * m/s, since 1 A/ps = 100 m/s.
+          vm_p[n] += sqrt(masskg)*emat[3*i+a][n]*v[i][a]; // sqrt(kg) * A/ps
+
+          /*
+          if (n==7){
+            
+            fprintf(fh_xm, "n,i,a: %d,%d,%d\n", n,i,a);
+            fprintf(fh_xm, "  mass: %e\n", ms);
+            fprintf(fh_xm, "  emat[3*i+a][n]: %e\n", emat[3*i+a][n]);
+            fprintf(fh_xm, "  u: %e\n", u[i][a]);
+            fprintf(fh_xm, "  %e\n", xm_p[n]);
+            
+          }
+          */
+          
+        }
+      //}
+    }
+
+  }
+
+  MPI_Allreduce(xm_p,xm,3*natoms,MPI_DOUBLE,MPI_SUM,world);
+  MPI_Allreduce(vm_p,vm,3*natoms,MPI_DOUBLE,MPI_SUM,world);
+  MPI_Allreduce(fm_p,fm,3*natoms,MPI_DOUBLE,MPI_SUM,world);
+  //MPI_Allreduce(fmi_p,fmi,3*natoms*natoms,MPI_DOUBLE,MPI_SUM,world);
+
+  if (update->ntimestep % 2000 == 0){
+
+
+    // Convert from mode coordinates back to atom, just to check.
+    /*
+    double via;
+    double mi;
+    double u2[32][3],v2[32][3]; // u and v from mode caluclations
+    //fprintf(fh_debug,"---------------------- TIMESTEP %d\n", update->ntimestep);
+    for (int i=0; i<natoms; i++){
+    //for (int i=0; i<1; i++){
+      mi = mass[type[i]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
+      for (int a=0; a<3; a++){
+      //for (int a=2; a<3; a++){
+        uia = 0.0;
+        via = 0.0;
+        v2[i][a] = 0.0;
+        u2[i][a] = 0.0;
+        for (int n=0; n<3*natoms; n++){
+          via += (1.0/sqrt(mi))*vm[n]*emat[3*i+a][n];
+          v2[i][a] += (1.0/sqrt(mi))*vm[n]*emat[3*i+a][n];
+          uia += (1.0/sqrt(mi))*xm[n]*emat[3*i+a][n];
+          u2[i][a] += (1.0/sqrt(mi))*xm[n]*emat[3*i+a][n];
+          //fprintf(fh_debug, "%d %d %d %e\n", i,a,n,emat[3*i+a][n]);
+        }
+        //fprintf(fh_debug, "%d %d %e %e\n", i,a,v[i][a],v2[i][a]);
+       
+        
+        if ( abs(u[i][a]-u2[i][a])>1e-6 || abs(v[i][a]-v2[i][a])>1e-6){
+          printf("FUCKKKKKKKK!\n");
+          //fprintf(fh_debug, "%d %d %e %e\n", i,a,u[i][a] - uia,v[i][a] - v2[i][a]);
+          //fprintf(fh_debug, "%e %e\n", u[i][a],uia);
+        }
+        
+
+      }
+        
+    }
+    */
+
+    // Check ht2, test 1.
+    /*
+    double qij2;
+    double ht2 = 0.0;
+    double term1, term2;
+    for (int i=0; i<natoms; i++){
+      itype = type[i];
+      double mi = mass[type[i]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
+      for (int j=0; j<natoms; j++){
+        jtype = type[j];
+        double mj = mass[type[j]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
+        qij2 = 0.0;
+        
+        //double qij_ab = 0.0;
+        for (int a=0; a<3; a++){
+          for (int b=0; b<3; b++){
+
+            // pairwise power transfer, using mode converted u and v. 
+            // THIS QIJ WORKS!!!
+            //qij2 += 0.5*( (phi[i][j][a][b]*u[j][b]*v[i][a]) - (phi[j][i][a][b]*u[i][b]*v[j][a]) );  
+            //qij2 += 0.5*( (phi[i][j][a][b]*u2[j][b]*v2[i][a]) - (phi[j][i][a][b]*u2[i][b]*v2[j][a]) );  
+
+            // Mode version
+            
+            double ujb_via = 0.0;
+            double uib_vja = 0.0;
+            
+            for (int n1=0; n1<3*natoms; n1++){
+              for (int n2=0; n2<3*natoms; n2++){
+                term1 = (phi[i][j][a][b]*emat[3*j+b][n2]*emat[3*i+a][n1])/sqrt(mi*mj);
+                term2 = (phi[j][i][a][b]*emat[3*i+b][n1]*emat[3*j+a][n2])/sqrt(mi*mj);
+                qij2 += 0.5*(term1*xm[n2]*vm[n1] - term2*xm[n1]*vm[n2]);
+                ujb_via += xm[n2]*vm[n1]*emat[3*j+b][n2]*emat[3*i+a][n1];
+                uib_vja += xm[n1]*vm[n2]*emat[3*i+b][n1]*emat[3*j+a][n2];
+              }
+            }    
+            ujb_via = ujb_via/sqrt(mi*mj);
+            uib_vja = uib_vja/sqrt(mi*mj);
+            
+            
+            //qij2 += 0.5*( (phi[i][j][a][b]*ujb_via) - (phi[j][i][a][b]*uib_vja) );  
+             
+  
+          } // b
+        } // a
+
+        if (itype==1 && jtype==2){
+          ht2 += 0.5*qij2;
+        }
+        else if (itype==2 && jtype==1){
+          ht2 -= 0.5*qij2;
+        }
+
+      }
+    }
+    */
+
+    // Check ht2, test 2.
+    /*
+    double qij2;
+    double q_n1n2;
+    double qij_n1n2;
+    double ht2 = 0.0;
+    double term1, term2;
+    for (int n1=0; n1<3*natoms; n1++){
+      for (int n2=0; n2<3*natoms; n2++){
+        q_n1n2 = 0.0;
+        for (int i=0; i<natoms; i++){
+          itype = type[i];
+          double mi = mass[type[i]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
+          for (int j=0; j<natoms; j++){
+            jtype = type[j];
+            double mj = mass[type[j]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
+            qij_n1n2 = 0.0;
+            for (int a=0; a<3; a++){
+              for (int b=0; b<3; b++){
+
+                term1 = (phi[i][j][a][b]*emat[3*j+b][n2]*emat[3*i+a][n1])/sqrt(mi*mj);
+                term2 = (phi[j][i][a][b]*emat[3*i+b][n1]*emat[3*j+a][n2])/sqrt(mi*mj);
+
+                qij_n1n2 += 0.5*(term1*xm[n2]*vm[n1] - term2*xm[n1]*vm[n2]);
+
+              } // b
+            } // a
+
+            // Now we have qij_n1n2, let's add it to q_n1n2 if spatial conditions are met.
+            if (itype==1 && jtype==2){
+              q_n1n2 += 0.5*qij_n1n2;
+            }
+            else if (itype==2 && jtype==1){
+              q_n1n2 -= 0.5*qij_n1n2;
+            }
+
+          } // j
+        } //i
+
+        // Now we have q_n1n2, let's add it to total HT.
+
+        ht2 += q_n1n2;
+
+      }
+    }
+    */
+
+    // Check ht2, test 3. 
+    double qij2;
+    double q_n1n2;
+    double qij_n1n2;
+    double ht2 = 0.0;
+    double term1, term2, term3;
+    double k_n1n2;
+    double k_n2n1;
+    for (int n1=0; n1<3*natoms; n1++){
+      for (int n2=0; n2<3*natoms; n2++){
+        q_n1n2 = 0.0;
+        k_n1n2 = 0.0;
+        k_n2n1 = 0.0;
+        for (int i=0; i<natoms; i++){
+          itype = type[i];
+          double mi = mass[type[i]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
+          for (int j=0; j<natoms; j++){
+            jtype = type[j];
+            double mj = mass[type[j]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
+
+            for (int a=0; a<3; a++){
+              for (int b=0; b<3; b++){
+
+                term1 = (phi[i][j][a][b]*emat[3*j+b][n2]*emat[3*i+a][n1])/sqrt(mi*mj); // (eV/(A^2 * kg)
+                term2 = (phi[j][i][a][b]*emat[3*i+b][n1]*emat[3*j+a][n2])/sqrt(mi*mj);
+                term3 = (phi[i][j][a][b]*emat[3*j+b][n1]*emat[3*i+a][n2])/sqrt(mi*mj);
+
+                //qij_n1n2 += 0.5*(term1*xm[n2]*vm[n1] - term2*xm[n1]*vm[n2]);
+
+                // Calculate coupling constants.
+                if (itype==1 && jtype==2){
+                  k_n1n2 += 0.5*term1;
+                  /*
+                  if (n1==0 && n2==0){
+                    //if (i != j){
+                      if (abs(phi[i][j][a][b]) > 0.0){
+                        fprintf(fh_debug, "%d %d %d %d %e\n", i,a,j,b,term1) ;
+                        fprintf(fh_debug, "  %e %e %e %e\n", phi[i][j][a][b],emat[3*j+b][n2],emat[3*i+a][n1],sqrt(mi*mj) );
+                        fprintf(fh_debug, "  %d %d\n", type[i], type[j]);
+                      }
+                    //}
+                  }
+                  */
+                }
+                else if (itype==2 && jtype==1){
+                  k_n1n2 -= 0.5*term2; // THIS WORKS FOR SOME REASON -> Don't need K_n2n1????
+                  //k_n2n1 += 0.5*term3; // THIS ALSO WORKS.
+                  /*
+                  if (n1==0 && n2==0){
+                    //if (i != j){
+                      if (abs(phi[i][j][a][b]) > 0.0){
+                        fprintf(fh_debug, "%d %d %d %d %e\n", i,a,j,b,term2) ;
+                        fprintf(fh_debug, "  %e %e %e %e\n", phi[i][j][a][b],emat[3*j+b][n2],emat[3*i+a][n1],sqrt(mi*mj) );
+                        fprintf(fh_debug, "  %d %d\n", type[i], type[j]);
+                      }
+                    //}
+                  }
+                  */
+                }
+
+                /*
+                if (n1==0 && n2==0){
+                  if (i != j){
+                    if (abs(phi[i][j][a][b]) > 0.0){
+                      fprintf(fh_debug, "%d %d %d %d %e\n", i,a,j,b,phi[i][j][a][b]*emat[3*j+b][n2]*emat[3*i+a][n1]/sqrt(mi*mj)) ;
+                      fprintf(fh_debug, "  %e %e %e %e\n", phi[i][j][a][b],emat[3*j+b][n2],emat[3*i+a][n1],sqrt(mi*mj) );
+                    }
+                  }
+                }
+                */
+                
+
+              } // b
+            } // a
+
+          } // j
+        } //i
+
+        // Now we have k_n1n2 and k_n2n1, let's add to HT.
+        ht2 += k_n1n2*xm[n2]*vm[n1] - k_n2n1*xm[n1]*vm[n2];
+
+        if (update->ntimestep==200){
+          //fprintf(fh_debug, "%d %d %e %e %e\n", n1,n2,k_n1n2,xm[n2],vm[n1]);
+        }
+        /*
+        if (abs(k_n1n2)>1e20){
+          ht2 += k_n1n2*xm[n2]*vm[n1] - k_n2n1*xm[n1]*vm[n2];
+        }
+        */
+        //if (n1==0 && n2==0){
+          //fprintf(fh_debug, "%d %d %.20e\n", n1,n2,k_n1n2);
+        //}
+
+        // See which MCCs are symmetric.
+        /*
+        if (k_n1n2 == k_n2n1){
+          fprintf(fh_debug, "%d %d %e\n", n1,n2, k_n1n2);
+        }
+        */
+
+        //ht2 += q_n1n2;
+
+      }
+    }
+
+    /*
+    double ht2 = 0.0;
+    double qij_n1n2;
+    double term1, term2;
+    for (int n1=3; n1<3*natoms; n1++){
+      for (int n2=3; n2<3*natoms; n2++){
+        for (int i=0; i<natoms; i++){
+          double mi = mass[type[i]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
+          itype = type[i];
+          for (int j=0; j<natoms; j++){
+            double mj = mass[type[i]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
+            jtype = type[j];
+            
+            qij_n1n2 = 0.0;
+            for (int a=0; a<3; a++){
+              for (int b=0; b<3; b++){
+                term1 = (phi[i][j][a][b]*emat[3*j+b][n2]*emat[3*i+a][n1])/sqrt(mi*mj); // (eV/A^2)/kg
+                term2 = (phi[j][i][a][b]*emat[3*j+a][n2]*emat[3*i+b][n1])/sqrt(mi*mj);
+
+                qij_n1n2 += 0.5*(term1*xm[n2]*vm[n1] - term2*xm[n1]*vm[n2]); // (eV/A^2)/kg * kg*(A^2/ps) = eV/ps
+                
+              } // b
+            } // a
+
+            if (itype==1 && jtype==2){
+              ht2 += 0.5*qij_n1n2;
+            }
+            else if (itype==2 && jtype==1){
+              ht2 -= 0.5*qij_n1n2;
+            }
+
+          } // j
+        } // i
+      }
+    }
+    */
+
+    fprintf(fh_ht2, "%.5f %e\n", 0.5*update->ntimestep*1e-3, ht2);
+
+  }
+
+
+  /*
+  for (ii = 0; ii < natoms; ii++) {
+
+    itag = tag[ii]-1;
+
+    itype = type[i];
+
+    uix = x[ii][0] - x0[itag][0];
+    uiy = x[ii][1] - x0[itag][1];
+    uiz = x[ii][2] - x0[itag][2];
+
+    if (std::abs(uix) > boxhi_x/2.0 && uix > 0) uix -= boxhi_x;
+    else if (std::abs(uix) > boxhi_x/2.0 && uix < 0) uix += boxhi_x;
+
+    if (std::abs(uiy) > boxhi_y/2.0 && uiy > 0) uiy -= boxhi_y;
+    else if (std::abs(uiy) > boxhi_y/2.0 && uiy < 0) uiy += boxhi_y;
+
+    if (std::abs(uiz) > boxhi_z/2.0 && uiz > 0) uiz -= boxhi_z;
+    else if (std::abs(uiz) > boxhi_z/2.0 && uiz < 0) uiz += boxhi_z;
+
+    
+    
+    //fprintf(fh_debug, "x[%d]: %f %f %f\n", itag, x[ii][0],x[ii][1],x[ii][2]);
+    //fprintf(fh_debug, "x0[%d]: %f %f %f\n", itag, x0[itag][0],x0[itag][1],x0[itag][2]);
+    //fprintf(fh_debug, "u[%d]: %f %f %f\n", itag, uix, uiy, uiz);
+    //fprintf(fh_debug, "\n");
+    
+    
+
+    for (jj = 0; jj < natoms; jj++) {
+
+      jtag = tag[jj]-1;
+
+      ujx = x[jj][0] - x0[jtag][0];
+      ujy = x[jj][1] - x0[jtag][1];
+      ujz = x[jj][2] - x0[jtag][2];
+
+      if (std::abs(ujx) > boxhi_x/2.0 && ujx > 0) ujx -= boxhi_x;
+      else if (std::abs(ujx) > boxhi_x/2.0 && ujx < 0) ujx += boxhi_x;
+
+      if (std::abs(ujy) > boxhi_y/2.0 && ujy > 0) ujy -= boxhi_y;
+      else if (std::abs(ujy) > boxhi_y/2.0 && ujy < 0) ujy += boxhi_y;
+
+      if (std::abs(ujz) > boxhi_z/2.0 && ujz > 0) ujz -= boxhi_z;
+      else if (std::abs(ujz) > boxhi_z/2.0 && ujz < 0) ujz += boxhi_z;
+
+
+
+      // TEP forces
+      
+      //f[ii][0] += -1.0*fc2[ii][jj][0]*ujx - 1.0*fc2[ii][jj][1]*ujy - 1.0*fc2[ii][jj][2]*ujz;
+      //f[ii][1] += -1.0*fc2[ii][jj][3]*ujx - 1.0*fc2[ii][jj][4]*ujy - 1.0*fc2[ii][jj][5]*ujz;
+      //f[ii][2] += -1.0*fc2[ii][jj][6]*ujx - 1.0*fc2[ii][jj][7]*ujy - 1.0*fc2[ii][jj][8]*ujz;
+      
+
+      // TITEP forces
+      
+      f[ii][0] += 1.0*(fc2[ii][jj][0]*(uix-ujx) + fc2[ii][jj][1]*(uiy-ujy) + fc2[ii][jj][2]*(uiz-ujz));
+      f[ii][1] += 1.0*(fc2[ii][jj][3]*(uix-ujx) + fc2[ii][jj][4]*(uiy-ujy) + fc2[ii][jj][5]*(uiz-ujz));
+      f[ii][2] += 1.0*(fc2[ii][jj][6]*(uix-ujx) + fc2[ii][jj][7]*(uiy-ujy) + fc2[ii][jj][8]*(uiz-ujz));
+      
+     
+
+      if (eflag) {
+        //evdwl = d0[itype][jtype] * (dexp*dexp - 2.0*dexp) - offset[itype][jtype];
+        //evdwl *= factor_lj;
+        evdwl = 0.5*(fc2[ii][jj][0]*uix*ujx + fc2[ii][jj][1]*uix*ujy + fc2[ii][jj][2]*uix*ujz 
+              + fc2[ii][jj][3]*uiy*ujx + fc2[ii][jj][4]*uiy*ujy + fc2[ii][jj][5]*uiy*ujz
+              + fc2[ii][jj][6]*uiz*ujx + fc2[ii][jj][7]*uiz*ujy + fc2[ii][jj][8]*uiz*ujz);
+      }
+
+      if (evflag) ev_tally(i,j,nlocal,newton_pair,
+                             evdwl,0.0,fpair,delx,dely,delz);
+
+      // Compute 3rd order terms
+      if (order>2){
+
+        for (kk = 0; kk < natoms; kk++) {
+
+          ukx = x[kk][0] - x0[kk][0];
+          uky = x[kk][1] - x0[kk][1];
+          ukz = x[kk][2] - x0[kk][2];
+
+          if (std::abs(ukx) > boxhi_x/2.0 && ukx > 0) ukx -= boxhi_x;
+          else if (std::abs(ukx) > boxhi_x/2.0 && ukx < 0) ukx += boxhi_x;
+
+          if (std::abs(uky) > boxhi_y/2.0 && uky > 0) uky -= boxhi_y;
+          else if (std::abs(uky) > boxhi_y/2.0 && uky < 0) uky += boxhi_y;
+
+          if (std::abs(ukz) > boxhi_z/2.0 && ukz > 0) ukz -= boxhi_z;
+          else if (std::abs(ukz) > boxhi_z/2.0 && ukz < 0) ukz += boxhi_z;
+
+          //ux = uix - 0.5*(ujx+ukx);
+          //uy = uiy - 0.5*(ujy+uky);
+          //uz = uiz - 0.5*(ujz+ukz);
+
+          
+          f[ii][0] += -0.5*(fc3[ii][jj][kk][0]*ujx*ukx + fc3[ii][jj][kk][1]*ujx*uky + fc3[ii][jj][kk][2]*ujx*ukz \
+                          + fc3[ii][jj][kk][3]*ujy*ukx + fc3[ii][jj][kk][4]*ujy*uky + fc3[ii][jj][kk][5]*ujy*ukz \
+                          + fc3[ii][jj][kk][6]*ujz*ukx + fc3[ii][jj][kk][7]*ujz*uky + fc3[ii][jj][kk][8]*ujz*ukz);
+
+          f[ii][1] += -0.5*(fc3[ii][jj][kk][9]*ujx*ukx + fc3[ii][jj][kk][10]*ujx*uky + fc3[ii][jj][kk][11]*ujx*ukz \
+                          + fc3[ii][jj][kk][12]*ujy*ukx + fc3[ii][jj][kk][13]*ujy*uky + fc3[ii][jj][kk][14]*ujy*ukz \
+                          + fc3[ii][jj][kk][15]*ujz*ukx + fc3[ii][jj][kk][16]*ujz*uky + fc3[ii][jj][kk][17]*ujz*ukz);
+
+          f[ii][2] += -0.5*(fc3[ii][jj][kk][18]*ujx*ukx + fc3[ii][jj][kk][19]*ujx*uky + fc3[ii][jj][kk][20]*ujx*ukz \
+                          + fc3[ii][jj][kk][21]*ujy*ukx + fc3[ii][jj][kk][22]*ujy*uky + fc3[ii][jj][kk][23]*ujy*ukz \
+                          + fc3[ii][jj][kk][24]*ujz*ukx + fc3[ii][jj][kk][25]*ujz*uky + fc3[ii][jj][kk][26]*ujz*ukz);
+          
+          
+
+
+          
+        }
+
+      }
+
+    }
+  }
+
+  // Total forces on cell
+  double fx, fy, fz;
+  fx =0;
+  fy = 0;
+  fz=0;
+  for (ii=0; ii<natoms; ii++){
+    fx += f[ii][0];
+    fy += f[ii][1];
+    fz += f[ii][2];
+  }
+
+  //printf("%f %f %f\n", fx,fy,fz);
+  */
+
+  if (vflag_fdotr) virial_fdotr_compute();
+
+  //fclose(fh_umat);
+
+}
+
+/* ----------------------------------------------------------------------
+   allocate all arrays
+------------------------------------------------------------------------- */
+
+void PairTep::allocate()
+{
+  allocated = 1;
+  int n = atom->ntypes;
+
+  memory->create(setflag,n+1,n+1,"pair:setflag");
+  for (int i = 1; i <= n; i++)
+    for (int j = i; j <= n; j++)
+      setflag[i][j] = 1;
+
+  memory->create(cutsq,n+1,n+1,"pair:cutsq");
+
+  memory->create(cut,n+1,n+1,"pair:cut");
+  memory->create(d0,n+1,n+1,"pair:d0");
+  memory->create(alpha,n+1,n+1,"pair:alpha");
+  memory->create(r0,n+1,n+1,"pair:r0");
+  memory->create(morse1,n+1,n+1,"pair:morse1");
+  memory->create(offset,n+1,n+1,"pair:offset");
+}
+
+/* ----------------------------------------------------------------------
+   global settings
+------------------------------------------------------------------------- */
+
+void PairTep::settings(int narg, char **arg)
+{
+  if (narg != 1) error->all(FLERR,"Illegal pair_style command");
+
+  //order = force->numeric(FLERR,arg[0]);
+  order = atoi(arg[0]);
+
+  // reset cutoffs that have been explicitly set
+
+  if (allocated) {
+    int i,j;
+    for (i = 1; i <= atom->ntypes; i++)
+      for (j = i; j <= atom->ntypes; j++)
+        if (setflag[i][j]) cut[i][j] = 10.0;
+  }
+}
+
+/* ----------------------------------------------------------------------
+   set coeffs for one or more type pairs
+------------------------------------------------------------------------- */
+
+void PairTep::coeff(int narg, char **arg)
+{
+  if (narg < 2 || narg > 3) 
+    error->all(FLERR,"Incorrect args for pair coefficients");
+  if (!allocated) allocate();
+
+  int ilo,ihi,jlo,jhi;
+  //force->bounds(FLERR,arg[0],atom->ntypes,ilo,ihi);
+  //force->bounds(FLERR,arg[1],atom->ntypes,jlo,jhi);
+
+  double cut_one = 10.0;
+  //if (narg == 6) cut_one = force->numeric(FLERR,arg[5]);
+
+  int count = 0;
+  for (int i = ilo; i <= ihi; i++) {
+    for (int j = MAX(jlo,i); j <= jhi; j++) {
+      cut[i][j] = cut_one;
+      setflag[i][j] = 1;
+      count++;
+    }
+  }
+
+  if (count == 0) error->all(FLERR,"Incorrect args for pair coefficients");
+
+
+
+  int natoms = atom->natoms;
+  /*
+  memory->create(fc2,natoms,natoms,9,"pair:fc2");
+  for (int i=0; i<natoms; i++){
+    for (int j=0; j<natoms; j++){
+      for (int indx=0; indx<9; indx++){
+        fc2[i][j][indx] = 0.0;
+      }
+    }
+  }
+
+  if (order > 2){
+    memory->create(fc3,natoms,natoms,natoms,27,"pair:fc3");
+    for (int i=0; i<natoms; i++){
+      for (int j=0; j<natoms; j++){
+        for (int k=0; k<natoms; k++){
+          for (int indx=0; indx<27; indx++){
+            fc3[i][j][k][indx] = 0.0;
+          }
+        }
+      }
+    }
+  }
+  */
+  memory->create(x0,natoms,3,"pair:x0");
+  for (int i = 0; i < natoms; i++) {
+    for (int j = 0; j < 3; j++) {
+      x0[i][j] = 0.0;
+    }
+  }
+
+  read_fc2();
+  if (order > 2){
+    read_fc3();
+  }
+  //printf("ASDF------------\n");
+  read_equil();
+
+  /* EMAT */
+
+  memory->create(emat,natoms*3,natoms*3,"mode:emat");
+
+  ifstream readfile2;
+
+  for (int i = 0; i < natoms*3; i++) {
+      for (int j = 0; j < natoms*3; j++) {
+          emat[i][j] = 0.0;
+      }
+  }
+
+  readfile2.open("EMAT");
+  //readfile2.open("ev_real.txt");
+
+  if (!readfile2.is_open()) {
+      printf("Unable to open EMAT.\n");
+      exit(1);
+  }
+
+  //printf("natoms: %d\n",  natoms);
+  for (int i=0;i<3*natoms;i++){
+      for (int j=0;j<3*natoms;j++){
+          readfile2>>emat[i][j];
+          //fprintf(fh_debug, "%e\n", emat[i][j]);
+      }
+  }  
+
+  // Allocate mode arrays
+  memory->create(u_p,natoms,3,"mode:u_p");
+  memory->create(u,natoms,3,"mode:u");
+  memory->create(xm_p,natoms*3,"mode:xm_p");
+  memory->create(xm,natoms*3,"mode:xm");
+  memory->create(vm_p,natoms*3,"mode:vm_p");
+  memory->create(vm,natoms*3,"mode:vm");
+  memory->create(fm_p,natoms*3,"mode:fm_p");
+  memory->create(fm,natoms*3,"mode:fm");
+
+}
+
+/* ----------------------------------------------------------------------
+   read fc2
+------------------------------------------------------------------------- */
+
+void PairTep::read_fc2()
+{
+
+
+  /*
+  char line[MAXLINE],*ptr;
+  FILE *fp;
+  int n,nwords,nuc_poscar;
+  char **words = new char*[MAXLINE];
+  int info = 0;
+  int i,j,a,b;
+  double fc;
+
+  fp = fopen("FC2", "r");
+
+  if (fp == NULL) {
+    char str[MAXLINE];
+    sprintf(str,"Cannot open the file %s", "FC2");
+    error->all(FLERR,str);
+  }
+
+  int eof = 0;
+  
+  // extract the fc2s
+  
+  nfc2=-1; // minus 1 since first line is ignored
+  while (!eof) {
+    if (comm->me == 0) {
+      ptr = fgets(line,MAXLINE,fp);
+      if (ptr == NULL) {
+        eof = 1;
+        fclose(fp);
+      } else n = strlen(line) + 1;
+    }
+    //MPI_Bcast(&eof,1,MPI_INT,0,world);
+    if (eof) break;
+    //MPI_Bcast(&n,1,MPI_INT,0,world);
+    //MPI_Bcast(line,n,MPI_CHAR,0,world);
+
+    //std::cout << line << std::endl;
+    nfc2++;
+  }
+
+  printf(" Found %d FC2s.\n", nfc2);
+  
+  memory->create(fc2,nfc2,"pair:fc2");
+  
+  
+  fp = fopen("FC2", "r");
+
+  if (fp == NULL) {
+    char str[MAXLINE];
+    sprintf(str,"Cannot open the file %s", "FC2");
+    error->all(FLERR,str);
+  }
+
+  // extract the fc2s
+  
+  eof=0;
+  int indx=-1; 
+  while (!eof) {
+    if (comm->me == 0) {
+      ptr = fgets(line,MAXLINE,fp);
+      if (ptr == NULL) {
+        eof = 1;
+        fclose(fp);
+        printf("ASDF\n");
+      } else n = strlen(line) + 1;
+    }
+    MPI_Bcast(&eof,1,MPI_INT,0,world);
+    if (eof) break;
+    MPI_Bcast(&n,1,MPI_INT,0,world);
+    MPI_Bcast(line,n,MPI_CHAR,0,world);
+
+    //std::cout << line << std::endl;
+    // strip comment, skip line if blank
+    
+    if ((ptr = strchr(line,'#'))) *ptr = '\0';
+    //nwords = atom->count_words(line);
+    nwords=5;
+    //fprintf(fh_debug, "nwords: %d\n", nwords);
+    if (nwords == 0) {
+      continue;
+    } else {
+
+      std::cout << line << std::endl;
+      nwords = 0;
+      words[nwords++] = strtok(line," \t\n\r\f");
+      indx++;
+      //printf("ADSFASDFASDF\n");
+      //printf(" indx: %d\n", indx);
+      while ((words[nwords++] = strtok(NULL," \t\n\r\f"))) continue;
+      
+      // Convert (a,b) coordinate to index
+      i = atoi(words[0])-1;
+      j = atoi(words[2])-1;
+      a = atoi(words[1])-1;
+      b = atoi(words[3])-1;
+      fc = atof(words[4])*13.605698066*(1./0.529177249)*(1./0.529177249); // Convert Ryd/Bohr^2 to eV/A^2;;
+      //fc = atof(words[4]);
+      
+      fc2[indx].i=i;
+      fc2[indx].j=j;
+      fc2[indx].a=a;
+      fc2[indx].b=b;
+      fc2[indx].fc=fc;
+
+      printf("ASDFADF\n");
+      
+    }
+  }
+  */
+
+  string line;
+  ifstream fh_fc2("FC2");
+  //string line;
+  nfc2 = -1; // Skip first line.
+  while (getline(fh_fc2, line))
+  {
+      nfc2=nfc2+1;
+  }
+
+  printf("  Found %d FC2s.\n", nfc2);
+
+  memory->create(fc2,nfc2,"mode:fc2");
+
+  fh_fc2.close();
+
+  ifstream readfile8;
+  readfile8.open("FC2");
+  string junk;
+  readfile8 >> junk;
+
+  for (int n=0; n<nfc2; n++){
+    readfile8 >> fc2[n].i >> fc2[n].a >> fc2[n].j >> fc2[n].b >> fc2[n].fc;
+  }
+
+  readfile8.close();
+
+  int i,j,k,a,b,c;
+  for (int w=0; w<nfc2; w++){
+    fc2[w].i = fc2[w].i-1;
+    fc2[w].a = fc2[w].a-1;
+    fc2[w].j = fc2[w].j-1;
+    fc2[w].b = fc2[w].b-1;
+    fc2[w].fc = fc2[w].fc*13.605698066*(1./0.529177249)*(1./0.529177249); // Convert Ryd/bohr^2 to eV/A^2
+  }
+
+  // Make an FC2 array
+  //double fc2_arr[32][32][9][9];
+  memory->create(phi,32,32,3,3,"pair:cutsq");
+  for (int i=0; i<32; i++){
+    for (int j=0; j<32; j++){
+      for (int a=0; a<3; a++){
+        for (int b=0; b<3; b++){
+          phi[i][j][a][b] = 0.0;
+        }
+      }
+    }
+  }
+
+  double fc;
+  for (int w=0; w<nfc2; w++){
+
+    i = fc2[w].i;
+    j = fc2[w].j;
+    a = fc2[w].a;
+    b = fc2[w].b;
+    fc = fc2[w].fc;
+    //printf("%d %d %d %d %f\n", i,j,a,b,fc);
+    phi[i][j][a][b] = fc;
+  }
+  
+  
+}
+
+/* ----------------------------------------------------------------------
+   read fc3
+------------------------------------------------------------------------- */
+
+void PairTep::read_fc3()
+{
+
+  string line;
+  ifstream fh_fc3("FC3");
+  //string line;
+  nfc3 = -1; // Skip first line.
+  while (getline(fh_fc3, line))
+  {
+      nfc3=nfc3+1;
+  }
+
+  printf("  Found %d FC3s.\n", nfc3);
+
+  memory->create(fc3,nfc3,"mode:fc3");
+
+  fh_fc3.close();
+
+  ifstream readfile8;
+  readfile8.open("FC3");
+  string junk;
+  readfile8 >> junk;
+
+  for (int n=0; n<nfc3; n++){
+    readfile8 >> fc3[n].i >> fc3[n].a >> fc3[n].j >> fc3[n].b >> fc3[n].k >> fc3[n].c >> fc3[n].fc;
+  }
+
+  readfile8.close();
+
+  int i,j,k,a,b,c;
+  for (int w=0; w<nfc3; w++){
+    fc3[w].i = fc3[w].i-1;
+    fc3[w].a = fc3[w].a-1;
+    fc3[w].j = fc3[w].j-1;
+    fc3[w].b = fc3[w].b-1;
+    fc3[w].k = fc3[w].k-1;
+    fc3[w].c = fc3[w].c-1;
+    fc3[w].fc = fc3[w].fc*13.605698066*(1./0.529177249)*(1./0.529177249)*(1./0.529177249); // Convert Ryd/bohr^3 to eV/A^3
+  }
+
+  //printf("%d ATOMS ----------------------------------------\n", atom->natoms);
+  int natoms = atom->natoms;
+  memory->create(psi,3*natoms,3*natoms,3*natoms,"mode:psi");
+  //printf("ADSFASDFASDFAFD\n");
+  for (int ii=0; ii<3*natoms; ii++){
+    //printf("%d\n", ii);
+    for (int jj=0; jj<3*natoms; jj++){
+      //printf("%d\n", ii);
+      for (int kk=0; kk<3*natoms; kk++){
+        //printf("%d\n", kk);
+        psi[ii][jj][kk] = 0.0;
+      }
+    }
+  }
+  //printf("ADSFASDFASDFAFD\n");
+  //int i,j,k,a,b,c;
+  double fc;
+  int ii,jj,kk;
+  for (int w=0; w<nfc3; w++){
+    i = fc3[w].i;
+    j = fc3[w].j;
+    k = fc3[w].k;
+    a = fc3[w].a;
+    b = fc3[w].b;
+    c = fc3[w].c;
+    fc = fc3[w].fc;
+    ii = 3*i+a;
+    jj = 3*j+b;
+    kk = 3*k+c;
+    //printf("%d %d %d\n", ii,jj,kk);
+    psi[ii][jj][kk] = fc;
+  }
+  
+  /*
+  for (int i=0; i<natoms; i++){
+    for (int j=0; j<natoms; j++){
+      for (int k=0; k<natoms; k++){
+        for (int a=0; a<3; a++){
+          for (int b=0; b<3; b++){
+            for (int c=0; c<3; c++){
+
+            }
+          }
+        }
+      }
+    }
+  }
+  */
+
+}
+
+/* ----------------------------------------------------------------------
+   read EQUIL
+------------------------------------------------------------------------- */
+
+void PairTep::read_equil()
+{
+
+  char line[MAXLINE],*ptr;
+  FILE *fp;
+  int n,nwords,nuc_poscar;
+  char **words = new char*[MAXLINE];
+  int info = 0;
+
+
+  fp = fopen("EQUIL", "r");
+
+  if (fp == NULL) {
+    char str[MAXLINE];
+    sprintf(str,"Cannot open the equilibrium position file %s", "EQUIL");
+    error->all(FLERR,str);
+  }
+
+  int eof = 0;
+  int atom_count = 0;
+  // extract the equilibrium position
+  while (!eof) {
+    if (comm->me == 0) {
+      ptr = fgets(line,MAXLINE,fp);
+      if (ptr == NULL) {
+        eof = 1;
+        fclose(fp);
+      } else n = strlen(line) + 1;
+    }
+    MPI_Bcast(&eof,1,MPI_INT,0,world);
+    if (eof) break;
+    MPI_Bcast(&n,1,MPI_INT,0,world);
+    MPI_Bcast(line,n,MPI_CHAR,0,world);
+
+    //std::cout << line << std::endl;
+
+    // strip comment, skip line if blank
+
+    if ((ptr = strchr(line,'#'))) *ptr = '\0';
+    //nwords = atom->count_words(line);
+    nwords=3;
+    //fprintf(fh_debug, "nwords: %d\n", nwords);
+    if (nwords == 0) {
+      continue;
+    } else {
+      nwords = 0;
+      words[nwords++] = strtok(line," \t\n\r\f");
+      while ((words[nwords++] = strtok(NULL," \t\n\r\f"))) continue;
+      x0[atom_count][0] = atof(words[0]);
+      x0[atom_count][1] = atof(words[1]);
+      x0[atom_count][2] = atof(words[2]);
+      //fprintf(fh_debug, "%f %f %f\n", x0[atom_count][0],x0[atom_count][1],x0[atom_count][2]);
+      atom_count++;
+    }
+  }
+
+
+}
+
+/* ----------------------------------------------------------------------
+   init for one type pair i,j and corresponding j,i
+------------------------------------------------------------------------- */
+
+double PairTep::init_one(int i, int j)
+{
+
+  /*
+  if (setflag[i][j] == 0) error->all(FLERR,"All pair coeffs are not set");
+
+  morse1[i][j] = 2.0*d0[i][j]*alpha[i][j];
+
+  if (offset_flag) {
+    double alpha_dr = -alpha[i][j] * (cut[i][j] - r0[i][j]);
+    offset[i][j] = d0[i][j] * (exp(2.0*alpha_dr) - 2.0*exp(alpha_dr));
+  } else offset[i][j] = 0.0;
+
+  d0[j][i] = d0[i][j];
+  alpha[j][i] = alpha[i][j];
+  r0[j][i] = r0[i][j];
+  morse1[j][i] = morse1[i][j];
+  offset[j][i] = offset[i][j];
+  */
+
+  return cut[i][j];
+}
+
+/* ----------------------------------------------------------------------
+   proc 0 writes to restart file
+------------------------------------------------------------------------- */
+
+void PairTep::write_restart(FILE *fp)
+{
+  write_restart_settings(fp);
+
+  int i,j;
+  for (i = 1; i <= atom->ntypes; i++)
+    for (j = i; j <= atom->ntypes; j++) {
+      fwrite(&setflag[i][j],sizeof(int),1,fp);
+      if (setflag[i][j]) {
+        fwrite(&d0[i][j],sizeof(double),1,fp);
+        fwrite(&alpha[i][j],sizeof(double),1,fp);
+        fwrite(&r0[i][j],sizeof(double),1,fp);
+        fwrite(&cut[i][j],sizeof(double),1,fp);
+      }
+    }
+}
+
+/* ----------------------------------------------------------------------
+   proc 0 reads from restart file, bcasts
+------------------------------------------------------------------------- */
+
+void PairTep::read_restart(FILE *fp)
+{
+  read_restart_settings(fp);
+
+  allocate();
+
+  int i,j;
+  int me = comm->me;
+  for (i = 1; i <= atom->ntypes; i++)
+    for (j = i; j <= atom->ntypes; j++) {
+      if (me == 0) fread(&setflag[i][j],sizeof(int),1,fp);
+      MPI_Bcast(&setflag[i][j],1,MPI_INT,0,world);
+      if (setflag[i][j]) {
+        if (me == 0) {
+          fread(&d0[i][j],sizeof(double),1,fp);
+          fread(&alpha[i][j],sizeof(double),1,fp);
+          fread(&r0[i][j],sizeof(double),1,fp);
+          fread(&cut[i][j],sizeof(double),1,fp);
+        }
+        MPI_Bcast(&d0[i][j],1,MPI_DOUBLE,0,world);
+        MPI_Bcast(&alpha[i][j],1,MPI_DOUBLE,0,world);
+        MPI_Bcast(&r0[i][j],1,MPI_DOUBLE,0,world);
+        MPI_Bcast(&cut[i][j],1,MPI_DOUBLE,0,world);
+      }
+    }
+}
+
+/* ----------------------------------------------------------------------
+   proc 0 writes to restart file
+------------------------------------------------------------------------- */
+
+void PairTep::write_restart_settings(FILE *fp)
+{
+  fwrite(&order,sizeof(double),1,fp);
+  fwrite(&offset_flag,sizeof(int),1,fp);
+  fwrite(&mix_flag,sizeof(int),1,fp);
+}
+
+/* ----------------------------------------------------------------------
+   proc 0 reads from restart file, bcasts
+------------------------------------------------------------------------- */
+
+void PairTep::read_restart_settings(FILE *fp)
+{
+  if (comm->me == 0) {
+    fread(&order,sizeof(double),1,fp);
+    fread(&offset_flag,sizeof(int),1,fp);
+    fread(&mix_flag,sizeof(int),1,fp);
+  }
+  MPI_Bcast(&order,1,MPI_DOUBLE,0,world);
+  MPI_Bcast(&offset_flag,1,MPI_INT,0,world);
+  MPI_Bcast(&mix_flag,1,MPI_INT,0,world);
+}
+
+/* ----------------------------------------------------------------------
+   proc 0 writes to data file
+------------------------------------------------------------------------- */
+
+void PairTep::write_data(FILE *fp)
+{
+  for (int i = 1; i <= atom->ntypes; i++)
+    fprintf(fp,"%d %g %g %g\n",i,d0[i][i],alpha[i][i],r0[i][i]);
+}
+
+/* ----------------------------------------------------------------------
+   proc 0 writes all pairs to data file
+------------------------------------------------------------------------- */
+
+void PairTep::write_data_all(FILE *fp)
+{
+  for (int i = 1; i <= atom->ntypes; i++)
+    for (int j = i; j <= atom->ntypes; j++)
+      fprintf(fp,"%d %d %g %g %g %g\n",
+              i,j,d0[i][j],alpha[i][j],r0[i][j],cut[i][j]);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double PairTep::single(int i, int j, int itype, int jtype, double rsq,
+                         double factor_coul, double factor_lj,
+                         double &fforce)
+{
+  double r,dr,dexp,phi;
+
+  r = sqrt(rsq);
+  dr = r - r0[itype][jtype];
+  dexp = exp(-alpha[itype][jtype] * dr);
+  fforce = factor_lj * morse1[itype][jtype] * (dexp*dexp - dexp) / r;
+
+  phi = d0[itype][jtype] * (dexp*dexp - 2.0*dexp) - offset[itype][jtype];
+  return factor_lj*phi;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void *PairTep::extract(const char *str, int &dim)
+{
+  dim = 2;
+  if (strcmp(str,"d0") == 0) return (void *) d0;
+  if (strcmp(str,"r0") == 0) return (void *) r0;
+  if (strcmp(str,"alpha") == 0) return (void *) alpha;
+  return NULL;
+}

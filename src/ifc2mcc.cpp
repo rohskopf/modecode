@@ -1013,7 +1013,7 @@ void Ifc2mcc::go_spatial()
 
                             // Calculate coupling constants.
                             //if (itype==1 && jtype==2){
-                            if (itype==3 && jtype==4){
+                            if (itype==1 && jtype==2){
                               mcc2_value += 1.0*term1;
                               /*
                               if (n1==0 && n2==0){
@@ -1028,7 +1028,7 @@ void Ifc2mcc::go_spatial()
                               */
                             }
                             //else if (itype==2 && jtype==1){
-                            else if (itype==4 && jtype==3){
+                            else if (itype==2 && jtype==1){
                               mcc2_value -= 1.0*term2; // THIS WORKS FOR SOME REASON -> Don't need K_n2n1????
                               //k_n2n1 += 0.5*term3; // THIS ALSO WORKS.
                               /*
@@ -1066,7 +1066,8 @@ void Ifc2mcc::go_spatial()
                         //I used to divide by 2, but we can do this in the heat transfer expression instead.
                         //if (n1 != n2) mcc2_value = 0.5*mcc2_value;
 
-                        if (abs(mcc2_value) > 1e23){
+                        //if (abs(mcc2_value) > 1e23){
+                        if (abs(mcc2_value)>0){
                             fprintf(fh_mcc2, "%d %d %.20e\n", n1,n2,mcc2_value);
                         }
                     //}
@@ -1621,7 +1622,8 @@ void Ifc2mcc::extract_smcc2(int nfiles)
             }
 
             //if (lowmode <= i && i <= highmode){
-                if (abs(mcc)>1e24){
+                //if (abs(mcc)>1e24){
+                if (abs(mcc)>0){
                     fprintf(fh_mcc2, "%d %d %.15e\n", i,j,mcc);
                 }
             //}

@@ -4,7 +4,7 @@ First calculate the 2nd order force constants:
 
 Perform acoustic sum rule correction:
 
-    modecode asr 2
+    modecode asr 2 1e-8
 
 Calculate the modes:
 
