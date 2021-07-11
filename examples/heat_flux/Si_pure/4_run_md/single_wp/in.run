@@ -1,0 +1,89 @@
+#echo screen
+ 
+newton on
+boundary	 	 p p p
+units	 	 	 metal
+atom_style	 	 atomic
+atom_modify map array
+
+read_data DATA
+
+neighbor    10.0 bin
+neigh_modify once yes
+
+####################################################################################################
+# Variables
+variable xhi equal 5.431000
+variable yhi equal 5.431000
+variable zhi equal 21.724000
+variable tol equal 0.0
+variable r1_zlo equal 0.0+${tol}
+variable r1_zhi equal ${zhi}/2.0-${tol}
+variable r2_zlo equal ${zhi}/2.0+${tol}
+variable r2_zhi equal ${zhi}-${tol}
+
+variable nthermo equal 20
+variable ntimesteps equal 20000
+variable normalize equal ${ntimesteps}/${nthermo}
+
+
+# Define regions and groups
+region r1 block EDGE EDGE EDGE EDGE 0.0 10.842000
+region r2 block EDGE EDGE EDGE EDGE 10.852000 ${r2_zhi}
+group gA region r1 # Group A
+group gB region r2 # Group B
+
+# Computes
+#compute dsp all mode/atom
+#compute ke_A gA ke
+#compute ke_B gB ke
+#compute pe_atom_A gA pe/atom
+#compute pe_A gA reduce sum c_pe_atom_A
+#compute pe_atom_B gB pe/atom
+#compute pe_B gB reduce sum c_pe_atom_B
+
+compute      myKE all ke/atom
+compute      myPE all pe/atom
+compute      myStress all stress/atom NULL virial
+#compute      fluxA gA heat/flux myKE myPE myStress
+#compute      fluxB gB heat/flux myKE myPE myStress
+#compute mode_hf all mode/hf myKE myPE myStress
+compute modeComp all mode 2
+compute mode_hf all mode/heatflux myKE myPE myStress ${normalize} ${ntimesteps}
+
+####################################################################################################
+
+pair_style tersoff
+pair_coeff * * Si.tersoff Si
+
+# Initialize velocity, thermo settings, timestep and ensemble
+#velocity	 all create 600 20101 rot yes mom yes
+thermo  	 ${nthermo}
+#thermo_style custom step etotal pe ke temp #ke press vol temp
+#thermo_style custom step c_pe_A c_ke_A c_pe_B c_ke_B c_mode_hf[3] #ke press vol temp
+thermo_style custom step etotal pe temp c_modeComp c_mode_hf[3]
+fix 1 all nve
+#fix 1 all nvt temp 1000.0 1000.0 1.0
+#fix 2 all temp/rescale 1000 1000.0 1000.0 1.0 1.0
+timestep  0.0005
+
+#fix 2 all momentum 1 linear 1 1 1
+
+#fix test all mode -0.1 0.1 0.1 # Initialize mode temperatures
+fix fixWp all wp 1e-3 0.91 30.0 67.0 50.0 5.431 2 1e-8
+#fix fixWp all wp 2e-3 0.85 30.0 67.0 50.0 5.431 2 1e-8
+#fix fixWp all wp 1e-3 0.91 30.0 67.0 50.0 5.431 2 2.6e-5
+
+# Run MD	 	 	 	 	  
+dump 1 all xyz 100 dump.xyz	
+dump_modify 1 format line "%ld %.9f %.9f %.9f"	 
+dump 2 all custom 100 dump.forces fx fy fz 
+#dump 3 all custom 1 dump.vel id vx vy vz
+#dump_modify 3 format float %20.15g scale yes
+dump_modify 2 sort id
+#dump_modify 3 sort id
+run ${ntimesteps}
+unfix 1
+undump 1
+
+#write_data Si.data
