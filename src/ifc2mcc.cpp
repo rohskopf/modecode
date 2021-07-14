@@ -65,7 +65,7 @@ Ifc2mcc::~Ifc2mcc()
 Read MCC file and store values
 */
 
-void Ifc2mcc::go()
+void Ifc2mcc::go(double tol)
 {
     order = mc->order;
 
@@ -288,11 +288,11 @@ void Ifc2mcc::go()
                         
 
                     }
-                    if (abs(mcc3_value)>1e48){
+                    if (abs(mcc3_value)>tol){
                         counter++;
                         //fprintf(fh_mcc3, "%d %d %d %.20e\n", n1,n2,n3,mcc3_value);
                     }
-                    if (abs(mcc3_value)>1e44){
+                    if (abs(mcc3_value)>tol){ // Originally tol was 1e44.
                         fprintf(fh_mcc3, "%d %d %d %.20e\n", n1,n2,n3,mcc3_value);
                     }
                 }
@@ -445,7 +445,7 @@ void Ifc2mcc::extract()
             }
 
             if (lowmode <= i && i <= highmode){
-                if (abs(mcc)>1e47){
+                if (abs(mcc)>1e47){ // originally tol was 1e47
                     fprintf(fh_mcc3, "%d %d %d %.15e\n", i,j,k,mcc);
                 }
             }

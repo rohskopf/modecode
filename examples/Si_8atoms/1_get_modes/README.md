@@ -17,7 +17,7 @@ Calculate the 3rd order force constants:
 Calculate MCC3s:
 
     mkdir mcc3
-    mpirun -np 4 modecode ifc2mcc 0 3
+    mpirun -np 4 modecode ifc2mcc 0 3 1e44 #1e44 is the tolerance
 
 Extract all MCC3s (a symmetric matrix) for modes in a range:
 

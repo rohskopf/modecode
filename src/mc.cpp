@@ -166,7 +166,7 @@ void MC::run(int nargs, char **args)
       // Convert IFC 2 MCC
       if (ifc2mcc->task==0){
           order = atoi(args[3]);
-          ifc2mcc->go();  
+          ifc2mcc->go(atof(args[4]));  
       }
       // Extract a range of MCC3s into a single MCC3 file.
       else if (ifc2mcc->task==1){

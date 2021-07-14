@@ -21,7 +21,9 @@ namespace MC_NS
 
     FILE * fh_debug;
 
-    void go();
+    //double tol; // tolerance
+
+    void go(double);
     void readFcs();
     void readEmat();
     unsigned long long int nChoosek(unsigned long long int,unsigned long long int);

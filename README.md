@@ -191,10 +191,11 @@ where
 
 To simply convert IFCs to MCCs of any order, do:
 
-    mpirun -np P modecode ifc2mcc 0 order
+    mpirun -np P modecode ifc2mcc 0 order tolerance
 
 where
 - `order` is the Taylor expansion order of the IFCs.
+- `tolerance` is the tolerance of MCC3s to ignore below.
 
 To calculate generalized velocities used in the Quasi-Harmonic Green Kubo formulation, do:
 
