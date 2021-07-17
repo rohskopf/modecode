@@ -1,11 +1,11 @@
 source ~/venv3.6/bin/activate
 mkdir em_house
-N=10 # Number of ensembles
+N=1 # Number of ensembles
 for ((i=1; i<=$N; i++)); do
     rm -r e$i
     cp -r files e$i
     cd e$i
-    rando_var=$((1000*i + 50101))
+    rando_var=$((1000*i + 20101))
     python rando_vel.py ${rando_var}
     lmp_mpi < in.run
     python integrate6.py
