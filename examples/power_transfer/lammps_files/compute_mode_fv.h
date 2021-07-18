@@ -72,6 +72,13 @@ class ComputeModeFv : public Compute {
   };
   mcc3_struct *mcc3; // array of MCC3 values
 
+  int nmcc4;
+  struct mcc4_struct{
+      int i,j,k,l;
+      double val;
+  };
+  mcc4_struct *mcc4; // array of MCC3 values
+
   //int nfc2;
   struct fc2_struct{
     int i,j;

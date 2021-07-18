@@ -84,7 +84,7 @@ dump 1 all xyz 100 dump.xyz
 
 fix test all mode -0.1 0.1 0.1 # Initialize mode temperatures
 
-run 20000
+run 40000
 #run 2000
 unfix 1
 #undump 1

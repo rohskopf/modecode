@@ -193,8 +193,8 @@ void Ifc2mcc::go(double tol)
         //double mass1 = 4.6637066e-26; // Assume every atom has silicon mass for now.
         //natoms = 8; // and natoms = 8
 
-        //n = natoms*3 - 3; // dont count translational modes
-        n = natoms*3; // including translational modes
+        n = natoms*3 - 3; // dont count translational modes
+        //n = natoms*3; // including translational modes
         //n = 2000;
         printf(" n: %d\n", n);
         unsigned long long int nmcc3_smaller = nChoosek(n+3-1,n-1);
@@ -223,8 +223,8 @@ void Ifc2mcc::go(double tol)
             nepp[p] += 1;
         }
 
-        //int start_indx = 3;
-        int start_indx=0; // including translational modes
+        int start_indx = 3;
+        //int start_indx=0; // including translational modes
         for (int p=0; p<rank; p++){
             start_indx += nepp[p];
         }
@@ -232,8 +232,8 @@ void Ifc2mcc::go(double tol)
         for (int p=0; p<rank+1; p++){
             end_indx += nepp[p];
         }
-        //end_indx=end_indx+4-1; // including translational modes
-        end_indx = end_indx+1-1;
+        end_indx=end_indx+4-1; // including translational modes
+        //end_indx = end_indx+1-1;
 
         if (rank==0){
             printf(" Splitting modes on procs like:\n");
@@ -258,9 +258,9 @@ void Ifc2mcc::go(double tol)
         for (int n1=start_indx; n1<end_indx; n1++){
         //for (int n1=40; n1<41; n1++){
             if (rank==0) printf(" n1: %d\n", n1);
-            for (int n2=0; n2<3*natoms; n2++){
+            for (int n2=3; n2<3*natoms; n2++){
 
-                for (int n3=0; n3<3*natoms;n3++){
+                for (int n3=3; n3<3*natoms;n3++){
                     mcc3_value = 0.0;
 
                     for (int f=0; f<nfc3; f++){ // Loop through nonzero FC3s

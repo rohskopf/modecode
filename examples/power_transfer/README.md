@@ -5,4 +5,6 @@ This example involves energy transfer from a single excited mode to other modes 
     chmod +x run_ensembles.sh
     ./run_ensembles.sh
 
-This produces a plot in em_house/em_compare.png, showing the agreement between the two quantities. 
+This produces a plot in e1/em_compare.png, showing the agreement between the two quantities. 
+
+The inputs in this simulation, like the FC files and MCC files, are obtained from the Si_8atom example.

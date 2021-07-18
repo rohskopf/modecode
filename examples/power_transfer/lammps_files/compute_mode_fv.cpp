@@ -91,6 +91,7 @@ ComputeModeFv::~ComputeModeFv()
   memory->destroy(tm);
   memory->destroy(em);
   memory->destroy(mcc3);
+  memory->destroy(mcc4);
 
   fclose(fh_fv);
 
@@ -230,6 +231,33 @@ void ComputeModeFv::init()
 
   readfile6.close();
 
+
+  /* MCC4 */
+
+  ifstream fh_mcc4("../MCC4");
+  //string line;
+  nmcc4 = 0;
+  while (getline(fh_mcc4, line))
+  {
+      nmcc4=nmcc4+1;
+  }
+
+  printf("  Found %d MCC4s.\n", nmcc4);
+
+  memory->create(mcc4,nmcc4,"mode:mcc4");
+
+  fh_mcc4.close();
+
+  ifstream readfile7;
+  readfile7.open("../MCC4");
+
+  for (int n=0; n<nmcc4; n++){
+    readfile7 >> mcc4[n].i >> mcc4[n].j >> mcc4[n].k >> mcc4[n].l >> mcc4[n].val;
+  }
+
+  readfile7.close();
+
+
   //printf(" ****************** %d %d %d %e\n", mcc3[5].i, mcc3[5].j, mcc3[5].k, mcc3[5].val);
 
   /*
@@ -368,13 +396,13 @@ double ComputeModeFv::compute_scalar()
 
   // Anharmonic forces and power transfer.
   if (universe->me==0){
-    double fv;
-    int i,j,k;
-    fprintf(fh_fv, " %0.2f ", 0.5*update->ntimestep*1e-3);
+    double fv=0.0;
+    int i,j,k,l;
+    //fprintf(fh_fv, " %0.2f ", 0.5*update->ntimestep*1e-3);
     //printf(" %d\n", nmcc3);
     int counter = 0;
     int n_indx, m_indx, l_indx;
-    int n,m,l;
+    int n,m,o,p;
     bool thismode;
     //for (int n=0; n<nmcc3; n++){
     for (int s=0; s<nmcc3; s++){
@@ -405,31 +433,22 @@ double ComputeModeFv::compute_scalar()
       // Also assign m and l indices accordingly.
       thismode=false;
       if (mcc3[s].i==10){ 
-        n_indx=0;
-        m_indx=1;
-        l_indx=2;
         n=mcc3[s].i;
         m=mcc3[s].j;
-        l=mcc3[s].k;
+        o=mcc3[s].k;
         thismode=true;
       }
       else if (mcc3[s].j==10){ 
-        n_indx=1;
-        m_indx=0;
-        l_indx=2;
         n=mcc3[s].j;
         m=mcc3[s].i;
-        l=mcc3[s].k;
-        thismode=true;
+        o=mcc3[s].k;
+        thismode=false;
       }
       else if (mcc3[s].k==10){ 
-        n_indx=2;
-        m_indx=0;
-        l_indx=1;
         n=mcc3[s].k;
         m=mcc3[s].i;
-        l=mcc3[s].j;
-        thismode=true;
+        o=mcc3[s].j;
+        thismode=false;
       }
       //printf("%d %d %d\n", n,m,l);
       
@@ -441,14 +460,11 @@ double ComputeModeFv::compute_scalar()
 
         // Playing around with other expressions
         //fv = -(1.0/3.0)*mcc3[s].val*(  xm[m]*xm[l]*vm[n] - xm[n]*xm[l]*vm[m])*1e-10*1e-10*100*6.242e+6; // eV/ps
-        fv = -(1.0/6.0)*mcc3[s].val*( xm[m]*xm[l]*vm[n] - xm[n]*xm[l]*vm[m])*1e-10*1e-10*100*6.242e+6; // eV/ps
-        //fv = -(1.0/2.0)*mcc3[s].val*( xm[m]*xm[l]*vm[n])*1e-10*1e-10*100*6.242e+6; // eV/ps
+        //fv = -(1.0/6.0)*mcc3[s].val*( xm[m]*xm[l]*vm[n] - xm[n]*xm[l]*vm[m])*1e-10*1e-10*100*6.242e+6; // eV/ps
+        fv += -(1.0/2.0)*mcc3[s].val*( xm[m]*xm[o]*vm[n])*1e-10*1e-10*100*6.242e+6; // eV/ps
         // print the power transfers.
-        fprintf(fh_fv, "%e ", fv);
+        //fprintf(fh_fv, "%e ", fv);
 
-      }
-      else{ 
-        fv=0.0;
       }
 
 
@@ -458,7 +474,82 @@ double ComputeModeFv::compute_scalar()
       //}
 
     }
-    fprintf(fh_fv, "\n");
+
+
+    for (int s=0; s<nmcc4; s++){
+
+      // Calculate power transfer
+      /*
+      i=mcc3[n].i;
+      j=mcc3[n].j;
+      k=mcc3[n].k;
+      //printf("%e\n", mcc3[n].val);
+      //if (abs(mcc3[n].val)>1e48){
+      //printf("ASDF\n");
+      fv = -1.0*mcc3[s].val*xm[j]*xm[k]*1e-10*1e-10*vm[i]*100*6.242e+6; // eV/ps
+      */
+      
+      // This code block is the recent working example as of 07-14-21
+      /*
+      n=mcc3[s].i;
+      m=mcc3[s].j;
+      l=mcc3[s].k;
+      //fv = -(1.0/2.0)*mcc3[s].val*xm[m]*xm[l]*1e-10*1e-10*vm[n]*100*6.242e+6; // eV/ps
+      fv = -(1.0/1.0)*mcc3[s].val*xm[m]*xm[l]*1e-10*1e-10*vm[n]*100*6.242e+6; // eV/ps
+      */
+
+      
+      // This code block uses the entire MCC3 matrix
+      // Find index of "n" (the mode under consideration)
+      // Also assign m and l indices accordingly.
+      thismode=false;
+      if (mcc4[s].i==10){ 
+        n=mcc4[s].i;
+        m=mcc4[s].j;
+        o=mcc4[s].k;
+        p=mcc4[s].l;
+        thismode=true;
+      }
+      else if (mcc4[s].j==10){ 
+        n=mcc4[s].j;
+        m=mcc4[s].i;
+        o=mcc4[s].k;
+        thismode=false;
+      }
+      else if (mcc4[s].k==10){ 
+        n=mcc4[s].k;
+        m=mcc4[s].i;
+        o=mcc4[s].j;
+        thismode=false;
+      }
+      //printf("%d %d %d\n", n,m,l);
+      
+      //if (mcc3[s].i==10){
+      //  fv = -(1.0/1.0)*mcc3[s].val*xm[m]*xm[l]*1e-10*1e-10*vm[n]*100*6.242e+6; // eV/ps
+      //}
+
+      if (thismode){
+
+        //printf("%d %d %d %d\n", n,m,o,p);
+
+        // Playing around with other expressions
+        //fv = -(1.0/3.0)*mcc3[s].val*(  xm[m]*xm[l]*vm[n] - xm[n]*xm[l]*vm[m])*1e-10*1e-10*100*6.242e+6; // eV/ps
+        //fv = -(1.0/6.0)*mcc3[s].val*( xm[m]*xm[l]*vm[n] - xm[n]*xm[l]*vm[m])*1e-10*1e-10*100*6.242e+6; // eV/ps
+        fv += -(1.0/6.0)*mcc4[s].val*( xm[m]*xm[o]*xm[p]*vm[n])*1e-10*1e-10*1e-10*100*6.242e+6; // eV/ps
+        // print the power transfers.
+        //fprintf(fh_fv, "%e ", fv);
+
+      }
+
+
+      // print the power transfers.
+      //fprintf(fh_fv, "%e ", fv);
+      counter++;
+      //}
+
+    }
+
+    fprintf(fh_fv, "%.6f %.10e\n", 0.5*update->ntimestep*1e-3, fv);
 
     if (update->ntimestep==0){
       printf(" ***** Found %d MCC3s.\n", counter);
