@@ -82,7 +82,7 @@ EM3::EM3(int narg, char **arg)
     printf(" Running for %d steps.\n", input->nsteps);
     //printf("Step PE KE E T P MSD AverageNeigh\n");
     if (input->space!=2) printf("Step PE\n");
-    if (input->space==2) printf("Step AtomPE ModePE\n");
+    if (input->space==2) printf("Step ModePE AtomPE\n");
     //compute->compute_ke();
     //compute->compute_pressure();
     //compute->compute_msd();
@@ -108,11 +108,12 @@ EM3::EM3(int narg, char **arg)
         // Compute KE for temperature rescaling
 
         compute->compute_ke();
-        mode->calcModeEnergy();
+        if (input->calc_fv_option==1) mode->calcModeEnergy();
 
         // Update the timestep
 
-        update->integrate();
+        if (input->integrate_option==0) update->integrate();
+        else update->integrate2();
 
         // Write output files
 
@@ -130,7 +131,7 @@ EM3::EM3(int narg, char **arg)
             if (input->space==2) printf(" %d %f %f\n", t, potential->pem*6.242e+18, potential->pea*6.242e+18);
             if (input->space == 1 || input->space==2) mode->mode2Atom();
             output->write_xyz();
-            output->write_forces();
+            //output->write_forces();
         }
     }
     

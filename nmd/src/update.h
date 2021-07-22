@@ -33,13 +33,16 @@ namespace EM3_NS
 
     void initialize();
     void integrate();
+    void integrate2(); // Stormer-Verlet integration
 
     int natoms;
     //double dt;
-    double *xa; // atomic positions
-    double *va; // atomic velocities
+    //double *xa; // atomic positions
+    //double *va; // atomic velocities
+    double **xa_old; // atomic positions at previous step
     double **aa; // atomic accelerations
 
+    double *xm_old; // mode positions at previous step
     double *xm; // mode positions
     double *am; // mode accelerations
     double *vm; // mode velocities

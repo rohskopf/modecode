@@ -51,6 +51,8 @@ namespace EM3_NS
     double *mass; // mass
     double temp;
     double dt; // timestep
+    int calc_fv_option; // tells whether or not to calculate F*V: 0 is false and 1 is true
+    int integrate_option; // 0 - velocity verlet, 1 - stormer-verlet
     double epsilon;
     double sigma;
    

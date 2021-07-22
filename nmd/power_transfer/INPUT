@@ -1,0 +1,10 @@
+THIS LINE IS IGNORED
+  nsteps: 2000
+  space: 2
+  nout: 2
+  order: 4
+  temperature: 600
+  timestep: 0.5         # in fs
+  epsilon: 1.65e-21
+  sigma: 3.4e-10
+  calcfv: 1

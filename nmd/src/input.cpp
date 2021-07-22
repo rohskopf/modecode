@@ -116,6 +116,14 @@ void Input::readinput()
                 stringstream ss(line);
                 ss >> characters >> sigma;
             }
+            case 9:{
+                stringstream ss(line);
+                ss >> characters >> calc_fv_option;
+            }
+            case 10:{
+                stringstream ss(line);
+                ss >> characters >> integrate_option;
+            }
 
   
         } // switch (i)
