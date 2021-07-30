@@ -102,12 +102,13 @@ self terms.
 
 The general use of this task is:
 
-    modecode asr order
+    modecode asr order tolerance
 
 where 
 
 - `asr` refers to the ASR task.
 - `order` refers to the IFC order, although for now ModeCode only supports 2nd order ASR.
+- `tolerance` is the absolute value below which we ignore IFCs. 
 
 #### Outputs.
 
