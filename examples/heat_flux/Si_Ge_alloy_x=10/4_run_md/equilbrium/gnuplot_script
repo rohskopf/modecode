@@ -1,0 +1,18 @@
+set terminal gif animate delay 10
+set output 'disp.gif'
+set key off # turns legend off
+
+stats 'disp.dat' nooutput
+#set xrange [0:1094]
+set xrange [0:547.2]
+set yrange [-2e-3:2e-3]
+set xlabel "Position ({\305})" font "Hershey/Complex_Script"
+set ylabel "Atom Displacement" font "Hershey/Complex_Script"
+set format y "%.0sx10^{%T}"
+#unset ytics
+
+do for [i=1:int(STATS_blocks)] {
+#do for [i=1:100] {
+    #plot 'datafile' index (i-1) with lines
+    plot 'disp.dat' index (i-1) pt 7 ps 1 lt -1
+}

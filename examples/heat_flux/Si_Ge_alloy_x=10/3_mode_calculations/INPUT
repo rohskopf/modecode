@@ -1,0 +1,25 @@
+----------------------------------------LAMMPS SETUP COMMANDS
+    log none  
+
+    boundary p p p  
+    units metal  
+    atom_style atomic
+    atom_modify map array # This is required 
+    atom_modify sort 1 10.0
+ 
+    compute P all pe 
+
+    read_data DATA_RELAXED_SORTED
+
+    fix		1 all nve
+
+    neighbor 0.0 bin
+    neigh_modify once yes
+
+----------------------------------------LAMMPS PAIR STYLE COMMANDS
+
+# Tersoff 1988
+pair_style tersoff
+pair_coeff * * SiCGe.tersoff Si(D) Ge
+
+----------------------------------------END OF FILE

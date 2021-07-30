@@ -1,0 +1,33 @@
+set terminal jpeg
+#set terminal jpeg enhanced background rgb 'black'
+#set object rectangle from screen 0,0 to screen 1,1 behind fillcolor rgb 'black' fillstyle solid noborder
+set output '2dplot.jpg'
+set clip points # Remove points overlappign axis. 
+
+set view map
+set size ratio .9
+set key autotitle columnhead
+
+set xrange [0.0:16]
+set yrange [0.0:16]
+set logscale cb 10
+
+#set palette defined (0 'white', 1 'blue', 2 'red', 3 'yellow')
+set palette defined (0 'white', 1 '#6C6C6C', 2 'red', 3 'yellow')
+#set palette defined (0 'blue', 1 'yellow', 2 'red', 3 'brown')
+
+set cbrange [1e-8:2e-3]
+set format cb "10^{%T}"
+set xlabel "Frequency (THz)"
+set ylabel "Frequency (THz)"
+#set cblabel "Test"
+
+#set cbtics 10
+
+#set object 1 rect from graph 0, graph 0 to graph 1, graph 1 back
+#set object 1 rect fc rgb "black" fillstyle solid 1.0
+
+#splot "MCC3" using 2:3:4 with points pointtype 5 pointsize 1 palette linewidth 30
+	
+#plot("mcc3.dat") using 1:2:3 with dots palette notitle
+plot("fv.dat") using 1:2:3 pt 7 ps 1.9 palette notitle
