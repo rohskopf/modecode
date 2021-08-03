@@ -8,7 +8,7 @@ atom_modify map array
 
 read_data DATA
 
-neighbor    10.0 bin
+neighbor    1.0 bin
 neigh_modify once yes
 
 ####################################################################################################
@@ -23,7 +23,7 @@ variable r2_zlo equal ${zhi}/2.0+${tol}
 variable r2_zhi equal ${zhi}-${tol}
 
 variable nthermo equal 20
-variable ntimesteps equal 2000
+variable ntimesteps equal 0
 variable normalize equal ${ntimesteps}/${nthermo}
 
 
@@ -48,20 +48,20 @@ compute      myStress all stress/atom NULL virial
 #compute      fluxA gA heat/flux myKE myPE myStress
 #compute      fluxB gB heat/flux myKE myPE myStress
 #compute mode_hf all mode/hf myKE myPE myStress
-compute modeComp all mode 2
-compute mode_hf all mode/heatflux myKE myPE myStress ${normalize} ${ntimesteps}
+#compute modeComp all mode 2
+#compute mode_hf all mode/heatflux myKE myPE myStress ${normalize} ${ntimesteps}
 
 ####################################################################################################
 
 pair_style tersoff
-pair_coeff * * Si.tersoff Si
+pair_coeff * * SiCGe.tersoff Si(D) Ge
 
 # Initialize velocity, thermo settings, timestep and ensemble
 velocity	 all create 600 10101 rot yes mom yes
 thermo  	 ${nthermo}
 #thermo_style custom step etotal pe ke temp #ke press vol temp
 #thermo_style custom step c_pe_A c_ke_A c_pe_B c_ke_B c_mode_hf[3] #ke press vol temp
-thermo_style custom step etotal pe temp c_modeComp c_mode_hf[3]
+thermo_style custom step etotal pe temp # c_modeComp c_mode_hf[3]
 fix 1 all nve
 #fix 1 all nvt temp 1000.0 1000.0 1.0
 #fix 2 all temp/rescale 1000 1000.0 1000.0 1.0 1.0
@@ -73,16 +73,6 @@ timestep  0.0005
 #fix fixWp all wp 1e-3 0.91 30.0 67.0 50.0 5.431 2 1e-8
 #fix fixWp all wp 2e-3 0.85 30.0 67.0 50.0 5.431 2 1e-8
 
-# Run MD	 	 	 	 	  
-dump 1 all xyz 100 dump.xyz	
-dump_modify 1 format line "%ld %.9f %.9f %.9f"	 
-dump 2 all custom 100 dump.forces fx fy fz 
-#dump 3 all custom 1 dump.vel id vx vy vz
-#dump_modify 3 format float %20.15g scale yes
-dump_modify 2 sort id
-#dump_modify 3 sort id
-run ${ntimesteps}
-unfix 1
-undump 1
+minimize 0 1e-7 100000 1000000
 
-#write_data Si.data
+write_data DATA_RELAXED
