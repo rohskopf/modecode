@@ -69,6 +69,11 @@ class ComputeModeHeatflux : public Compute {
   double *iflux_arr; // 1D array that holds the total interface flux, for MPI reduce.
                      // iflux = iflux_arr[0]
 
+  double **hf; // 2D array that holds the time-averaged contributions of mode heat fluxes. 
+  double normalize; // integer argument of the "thermo" command
+  double testicle; 
+  int nsteps; // number of timesteps
+
 
   int nmcc2;
   struct mcc2_struct{

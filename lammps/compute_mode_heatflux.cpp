@@ -50,7 +50,7 @@ ComputeModeHeatflux::ComputeModeHeatflux(LAMMPS *lmp, int narg, char **arg) :
   Compute(lmp, narg, arg),
   id_ke(NULL), id_pe(NULL), id_stress(NULL)
 {
-  if (narg != 6) error->all(FLERR,"Illegal compute mode command");
+  if (narg != 8) error->all(FLERR,"Illegal compute mode command");
 
   vector_flag = 1;
   size_vector = 6;
@@ -70,6 +70,9 @@ ComputeModeHeatflux::ComputeModeHeatflux(LAMMPS *lmp, int narg, char **arg) :
   n = strlen(arg[5]) + 1;
   id_stress = new char[n];
   strcpy(id_stress,arg[5]);
+
+  normalize = atof(arg[6]);
+  nsteps = atoi(arg[7]);
 
   int ike = modify->find_compute(id_ke);
   int ipe = modify->find_compute(id_pe);
@@ -132,7 +135,8 @@ ComputeModeHeatflux::~ComputeModeHeatflux()
   memory->destroy(miflux);
   memory->destroy(tm);
   memory->destroy(em);
-  memory->destroy(mcc3);
+  //memory->destroy(mcc3);
+  memory->destroy(hf);
 
   memory->destroy(sidemap);
   memory->destroy(regions);
@@ -206,6 +210,14 @@ void ComputeModeHeatflux::init()
     tm[n]=0.0;
     em[n]=0.0;
   }
+  
+  
+  memory->create(hf,natoms*3, natoms*3,"mode:hf");
+  for (int n=0; n<3*natoms; n++){
+    for (int m=0; m<3*natoms; m++){
+      hf[n][m] = 0.0;
+    } 
+  }
 
   /* EQUIL */
 
@@ -241,7 +253,7 @@ void ComputeModeHeatflux::init()
       }
   }
 
-  readfile2.open("EMAT");
+  readfile2.open("../EMAT");
   //readfile2.open("ev_real.txt");
 
   if (!readfile2.is_open()) {
@@ -277,53 +289,15 @@ void ComputeModeHeatflux::init()
     readfile3>>freq[i];
   }
 
-  /* SIDEMAP */
-
-  ifstream readfile4;
-
-  readfile4.open("SIDEMAP");
-  //readfile2.open("ev_real.txt");
-
-  if (readfile4.is_open()) {
-
-    int ntypes = atom->ntypes;
-    printf("    %d atom types.\n", ntypes);
-    memory->create(sidemap,ntypes,"mode:sidemap");
-
-    for (int t=0; t<ntypes; t++){
-      readfile4>>sidemap[t];
-      //printf(" %d\n", sidemap[t]);
-
-    }
-
-  }
-
-  /* REGIONS */
-
-  ifstream readfile5;
-
-  readfile5.open("REGIONS");
-
-  if (readfile5.is_open()) {
-    memory->create(regions,natoms,"mode:regions");
-    memory->create(zvals,3,"mode:zvals");
-    for (int i=0; i<3; i++){
-      readfile5>>zvals[i];
-    }
-    // assign regions to each atom based on equilibrium position
-    for (int i=0; i<natoms; i++){
-      if (x0[i][2]<zvals[0]) regions[i]=1;
-      else if (zvals[0] <= x0[i][2] && x0[i][2] < zvals[1]) regions[i]=2;
-      else if (zvals[1] <= x0[i][2] && x0[i][2] < zvals[2]) regions[i]=3;
-      else if (x0[i][2] >= zvals[3]) regions[i]=4;
-      else printf("EQUILIBRIUM POSITIONS OR REGIONS ARE MESSED UP.\n");
-
-    }
-  }
-
   /* MCC2 */
 
-  ifstream fh_mcc2("MCC2");
+  ifstream fh_mcc2("../GV");
+
+  if (!fh_mcc2.is_open()) {
+      printf("Unable to open GV.\n");
+      exit(1);
+  }
+
   string line;
   nmcc2 = 0;
   while (getline(fh_mcc2, line))
@@ -338,7 +312,8 @@ void ComputeModeHeatflux::init()
   fh_mcc2.close();
 
   ifstream readfile7;
-  readfile7.open("MCC2");
+
+  readfile7.open("../GV");
 
   for (int n=0; n<nmcc2; n++){
     readfile7 >> mcc2[n].i >> mcc2[n].j >> mcc2[n].val;
@@ -346,113 +321,6 @@ void ComputeModeHeatflux::init()
 
   readfile7.close();
   
-
-  /* MCC3 */
-
-  
-  ifstream fh_mcc3("MCC3");
-  //string line;
-  nmcc3 = 0;
-  while (getline(fh_mcc3, line))
-  {
-      nmcc3=nmcc3+1;
-  }
-
-  printf("  Found %d MCC3s.\n", nmcc3);
-
-  memory->create(mcc3,nmcc3,"mode:mcc3");
-
-  fh_mcc3.close();
-
-  ifstream readfile6;
-  readfile6.open("MCC3");
-
-  for (int n=0; n<nmcc3; n++){
-    readfile6 >> mcc3[n].i >> mcc3[n].j >> mcc3[n].k >> mcc3[n].val;
-  }
-
-  readfile6.close();
-
-
-  /* FC2*/
-
-  ifstream fh_fc2("FC2");
-  //string line;
-  nfc2 = -1; // Skip first line.
-  while (getline(fh_fc2, line))
-  {
-      nfc2=nfc2+1;
-  }
-
-  printf("  Found %d FC2s.\n", nfc2);
-
-  memory->create(fc2,nfc2,"mode:fc2");
-
-  fh_fc2.close();
-
-  ifstream readfile8;
-  readfile8.open("FC2");
-  string junk;
-  readfile8 >> junk;
-
-  for (int n=0; n<nfc2; n++){
-    readfile8 >> fc2[n].i >> fc2[n].a >> fc2[n].j >> fc2[n].b >> fc2[n].val;
-  }
-
-  readfile8.close();
-
-  int i,j,a,b;
-  for (int w=0; w<nfc2; w++){
-    fc2[w].i = fc2[w].i-1;
-    fc2[w].a = fc2[w].a-1;
-    fc2[w].j = fc2[w].j-1;
-    fc2[w].b = fc2[w].b-1;
-    //printf("%d %d %d %d %e\n", i,a,j,b,fc2[w].val);
-    fc2[w].val = fc2[w].val*13.605698066*(1./0.529177249)*(1./0.529177249); // Convert Ryd/bohr^2 to eV/A^2
-    //printf("%d %d %d %d %e\n", i,a,j,b,fc2[w].val);
-  }
-  
-
-  /* FC3*/
-
-  ifstream fh_fc3("FC3");
-  //string line;
-  nfc3 = -1; // Skip first line.
-  while (getline(fh_fc3, line))
-  {
-      nfc3=nfc3+1;
-  }
-
-  printf("  Found %d FC3s.\n", nfc3);
-
-  memory->create(fc3,nfc3,"mode:fc3");
-
-  fh_fc3.close();
-
-  ifstream readfile9;
-  readfile9.open("FC3");
-  junk;
-  readfile9 >> junk;
-
-  for (int n=0; n<nfc3; n++){
-    readfile9 >> fc3[n].i >> fc3[n].a >> fc3[n].j >> fc3[n].b >> fc3[n].k >> fc3[n].c >> fc3[n].val;
-  }
-
-  readfile9.close();
-
-  int k,c;
-  for (int w=0; w<nfc3; w++){
-    fc3[w].i = fc3[w].i-1;
-    fc3[w].a = fc3[w].a-1;
-    fc3[w].j = fc3[w].j-1;
-    fc3[w].b = fc3[w].b-1;
-    fc3[w].k = fc3[w].k-1;
-    fc3[w].c = fc3[w].c-1;
-    //printf("%d %d %d %d %e\n", i,a,j,b,fc2[w].val);
-    fc3[w].val = fc3[w].val*13.605698066*(1./0.529177249)*(1./0.529177249)*(1./0.529177249); // Convert Ryd/bohr^3 to eV/A^3
-    //printf("%d %d %d %d %e\n", i,a,j,b,fc2[w].val);
-  }
-
   //printf(" ****************** %d %d %d %e\n", mcc3[5].i, mcc3[5].j, mcc3[5].k, mcc3[5].val);
 
   /*
@@ -881,6 +749,8 @@ void ComputeModeHeatflux::compute_vector()
     double xn1,xn2,xn3;
     double vn1,vn2,vn3;
     double mcc;
+    double volume = 5.431*5.431*543.1*1e-30; // m^3
+    double contribution;
     for (int s=0; s<nmcc2; s++){
       n1 = mcc2[s].i;
       n2 = mcc2[s].j;
@@ -889,18 +759,33 @@ void ComputeModeHeatflux::compute_vector()
       vn1 = vm[n1]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
       vn2 = vm[n2]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
       mcc = mcc2[s].val; // J/(kg*m^2)
+      //mcc = mcc*1e-14; // A/ps^2
       // Multiply by 1.0 when comparing to TEP.
       //ht += 1.0*mcc*xn2*vn1*6.242e+6; // eV/ps since 1 J/s = 6.242e+6 eV/ps
       // Multiple by 2.0 when comparing to others?
-      if (abs(mcc)>1e24){
+      //if (abs(mcc)>1e24){
       //if (n1!=73 && n1!=74 && n1!=76 && n1!=77 && n2!=73 && n2!=74 && n2!=76 && n2!=77){
-        ht += 1.0*mcc*xn2*vn1*6.242e+6; // eV/ps since 1 J/s = 6.242e+6 eV/ps
-      //}
-      }
 
-      if (update->ntimestep==200){
+      //printf("%d\n", n1);
+      
+      //if ( (n1==979 && n2 == 980) || (n1==979 && n2==2300) ){
+      //  printf("%d %d %e %e %e %e\n", n1, n2, mcc, vn1, xn2, 1.0*mcc*xn2*vn1*6.242e+6/(16019.1477991*1e-30));
+      //}
+      
+      // The factor of 1e-10 is because the units are W*m before we divide by volume - we convert the "m" to "A". 
+      //ht += 1.0*mcc*xn2*vn1*6.242e+6*1e-10/(16019.1477991*1e-30); // eV/ps since 1 J/s = 6.242e+6 eV/ps
+      contribution = mcc*xn2*vn1*(1.0/volume)*(6.242e6/1e20)*1e18*(-1.0);
+      ht += contribution;
+      //}
+      //}
+
+      // Add HF contribution, divided by normalize=ntimesteps/nthermo.
+      //hf[n1][n2] += contribution/normalize; //*(nthermo/update->ntimestep);
+      hf[n1][n2] += abs(contribution/normalize); //*(nthermo/update->ntimestep);
+
+      //if (update->ntimestep==200){
         //fprintf(fh_debug, "%d %d %e %e %e\n", n1,n2,mcc,xm[n2],vm[n1]);
-      }
+      //}
 
       /*
       if (abs(mcc)>1e24){
@@ -909,30 +794,25 @@ void ComputeModeHeatflux::compute_vector()
       */
 
     }
-
-    
-    for (int s=0; s<nmcc3; s++){
-      n1 = mcc3[s].i;
-      n2 = mcc3[s].j;
-      n3 = mcc3[s].k;
-      xn1 = xm[n1]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
-      xn2 = xm[n2]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
-      xn3 = xm[n3]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
-      vn1 = vm[n1]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
-      vn2 = vm[n2]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
-      vn3 = vm[n3]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
-      mcc = mcc3[s].val; // J/(kg^(3/2)*m^3
-      if (abs(mcc)>1e46){
-      //if (n1!=73 && n1!=74 && n1!=76 && n1!=77 && n2!=73 && n2!=74 && n2!=76 && n2!=77 && n3!=73 && n3!=74 && n3!=76 && n3!=77){
-        ht += (1.0/3.0)*mcc*xn3*xn2*vn1*6.242e+6; // eV/ps since 1 J/s = 6.242e+6 eV/ps
-      //}
-      }
-    }
     
 
     fprintf(fh_fvtot, "%f %e\n", 0.5*update->ntimestep*1e-3, ht);
 
-  }
+    //testicle += 1.0;
+    //printf("%f\n", testicle);
+    if (update->ntimestep == nsteps){
+      for (int n1=0; n1<3*natoms; n1++){
+        for (int n2=0; n2<3*natoms; n2++){
+          if (abs(hf[n1][n2])>1e-3){
+            fprintf(fh_fv, "%f %f %e\n", freq[n1], freq[n2], hf[n1][n2]);
+          }
+        }
+      }
+    }
+    //fprintf(fh_fv, "%d %d %e\n", n1, n2, hf[n1][n2]
+
+  } // if (universe->me==0)
+
   // TEP energy
   /*
   double fc;
