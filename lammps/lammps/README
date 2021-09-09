@@ -1,0 +1,37 @@
+****************************************************************************************************
+**********************************  Mode Code 0.0 Documentation ************************************
+**********************************  LAMMPS Source Files ********************************************
+****************************************************************************************************
+
+Put these files into the /src directory of LAMMPS and then install LAMMPS.
+
+There are 2 classes here: (1) compute mode
+                          (2) fix mode
+
+************************************ Compute Mode **************************************************
+Compute mode computes and outputs mode amplitudes, velocities, temperature, and energies. In LAMMPS, 
+it's used like so:
+
+  compute modeComp all mode 0 # Setting value: 0 - plots, 1 - gifs, 2 - plots and gifs.
+
+where the final integer is an output setting that determines whether to output data for plots or
+gifs.
+
+For a setting of 0, data for plots are output where the first column represents the time, and 
+the other columns represent the mode indices (starting from zero) for which a quantity (amplitude,
+velocity, energy, etc.) is being output. 
+
+For a setting of 1, data for gifs are output where the x-axis of the gif are mode frequencies, and
+y-axis are whatever quantity you want to view as a function of time. This option allows one to view
+all mode quantities as a function of time.
+
+For a setting of 2, both plot and gif data are output. 
+
+If you use setting 0 or 2, you must supply an INDICES file which labels the mode indices (starting
+from zero) that you wish you output data for. 
+
+************************************ Fix Mode **************************************************
+Fix mode sets the initial mode temperatures and coordinates. 
+
+These are set via the MODETEMP and MODECOOR files. For any modes that are not found in these files,
+they'll be given a value of zero. 
