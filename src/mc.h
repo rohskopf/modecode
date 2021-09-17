@@ -30,6 +30,7 @@ namespace MC_NS
         class Compute *compute;
         class Tic *tic;
         class Qhgk *qhgk;
+        class Visualize *visualize;
         //class PopTimer *poptimer;
         //class Config;
         MC(int, char **);

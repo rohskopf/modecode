@@ -40,7 +40,7 @@ LIBS =
 
 PROG = modecode
 
-CXXSRC= mc.cpp main.cpp mem.cpp in.cpp verify.cpp ifc2mcc.cpp asr.cpp compute.cpp tic.cpp qhgk.cpp
+CXXSRC= mc.cpp main.cpp mem.cpp in.cpp verify.cpp ifc2mcc.cpp asr.cpp compute.cpp tic.cpp qhgk.cpp visualize.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 

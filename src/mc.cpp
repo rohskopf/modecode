@@ -12,6 +12,7 @@
 #include "compute.h"
 #include "tic.h"
 #include "qhgk.h"
+#include "visualize.h"
 //#include "config.h"
 
 /* MPI include file */
@@ -111,6 +112,9 @@ void MC::create()
     }
     if (task=="qhgk"){
         qhgk = new Qhgk(this);
+    }
+    if (task=="visualize"){
+        visualize = new Visualize(this);
     }
     //else{
     //    printf(" INVALID TASK.\n");
@@ -282,6 +286,25 @@ void MC::run(int nargs, char **args)
 
   }
 
+  if (task=="visualize"){
+
+      if (nargs != 4){
+        printf("Need 4 args for visualization! visualize temperature n_indx\n");
+        printf("You gave %d args.\n", nargs);
+        exit(1);
+      }
+      visualize->temperature = atof(args[2]);
+      visualize->n_indx = atoi(args[3]);
+
+      visualize->initialize();
+      visualize->readEmat();
+      visualize->readGV();
+
+      visualize->calcInitialState();
+
+
+  }
+
   
 }
 
@@ -310,6 +333,9 @@ void MC::finalize()
     }
     if (task=="qhgk"){
         delete qhgk;
+    }
+    if (task=="visualize"){
+        delete visualize;
     }
 
 }
