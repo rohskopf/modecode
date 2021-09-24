@@ -88,7 +88,9 @@ void Visualize::calcInitialState()
         vm[n] = 0.0;
     }
 
-    // Initialize based on temperature.
+    // Initialize the state (mode amplitudes and velocities).
+    // The mode given by n_indx is initialized with a positive amplitude.
+    // The rest of the modes are intitialized with positive velocities.
     xm[n_indx] = sqrt(kb*temperature)/freq[n_indx]; // Units sqrt(kg)*m
     for (int n=0; n<3*natoms; n++){
         if (n!=n_indx){
@@ -99,6 +101,42 @@ void Visualize::calcInitialState()
     }
  
 
+}
+
+/*
+Calculate time dependence of mode amplitudes and velocities, and print the atomic displacements weighted
+by magnitude of GVs.
+Realize that the time for a single oscillation to come back is 2*pi/frequency.
+So the max time we should use is 2*pi divided by the minimum non-zero frequency.
+*/
+
+void Visualize::calcTimeDependence()
+{
+
+    printf(" Calculating time dependence of mode amplitudes and velocities.\n");
+
+    // Find maximum time.
+    double minfreq = 1.0; // Just choose some number that we know isn't the minimum.
+    for (int n=0; n<3*natoms; n++){
+        if ( (freq[n] < minfreq) && (freq[n] > 0.0) ){
+            minfreq = freq[n];
+        }
+    }
+
+    printf(" Minimum nonzero frequency: %e THz\n", minfreq);
+    double maxtime = (2.0*3.1415926535)/minfreq;
+    double timestep = 10.0; // ps. We don't need a sufficient timestep for MD, this is just visualizing.
+    printf(" Need %e ps of time.\n", maxtime);
+    int ntimesteps = round(maxtime/timestep);
+    printf(" Need %f timesteps.\n", ntimesteps);
+
+    // Now loop through number of timesteps and calculate amplitudes and velocities, and convert to
+    // atomic displacements that we can visualize.
+    double time;
+    for (int t=0; t<ntimesteps; t++){
+        time = t*timestep;
+        printf("%f\n", time);
+    }
 }
 
 /*

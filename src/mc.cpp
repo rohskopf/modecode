@@ -301,6 +301,7 @@ void MC::run(int nargs, char **args)
       visualize->readGV();
 
       visualize->calcInitialState();
+      visualize->calcTimeDependence();
 
 
   }

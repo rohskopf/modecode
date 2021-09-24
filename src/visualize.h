@@ -23,6 +23,7 @@ namespace MC_NS
 
     void initialize();
     void calcInitialState();
+    void calcTimeDependence();
     void readEmat();
     void readGV();
 
