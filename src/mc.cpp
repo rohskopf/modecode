@@ -46,7 +46,7 @@ MC::MC(int narg, char **arg)
     if (rank == 0)
     {
         std::cout << " +-----------------------------------------------------------------+" << std::endl;
-        std::cout << " +                        IFC Calculator 0.0                       +" << std::endl;
+        std::cout << " +                          ModeCode 0.0                           +" << std::endl;
         std::cout << " +-----------------------------------------------------------------+" << std::endl;
         //std::cout << " Running on " << nprocs << " procs" << std::endl;
     }
