@@ -24,6 +24,8 @@ namespace MC_NS
     void initialize();
     void calcInitialState();
     void calcTimeDependence();
+    void calcAmplitude(int, double);
+    void calcVelocity(int, double);
     void readEmat();
     void readGV();
 
@@ -44,8 +46,11 @@ namespace MC_NS
 
     double *xm; // mode amplitudes
     double *vm; // mode velocities
+    double *xm0; // initial mode amplitudes
+    double *vm0; // initial mode velocities
 
     double kb = 1.38064852e-23; // Boltzmann constant
+    double pi = 3.1415926535;
 
 
 

@@ -58,6 +58,8 @@ Visualize::~Visualize()
     mem->deallocate(freq);
     mem->deallocate(xm);
     mem->deallocate(vm);
+    mem->deallocate(xm0);
+    mem->deallocate(vm0);
     mem->deallocate(gv);
 
 };
@@ -83,9 +85,13 @@ void Visualize::calcInitialState()
 
     mem->allocate(xm, 3*natoms);
     mem->allocate(vm, 3*natoms);
+    mem->allocate(xm0, 3*natoms);
+    mem->allocate(vm0, 3*natoms);
     for (int n=0; n<3*natoms; n++){
         xm[n] = 0.0;
         vm[n] = 0.0;
+        xm0[n] = 0.0;
+        vm0[n] = 0.0;
     }
 
     // Initialize the state (mode amplitudes and velocities).
@@ -128,15 +134,56 @@ void Visualize::calcTimeDependence()
     double timestep = 10.0; // ps. We don't need a sufficient timestep for MD, this is just visualizing.
     printf(" Need %e ps of time.\n", maxtime);
     int ntimesteps = round(maxtime/timestep);
-    printf(" Need %f timesteps.\n", ntimesteps);
+    printf(" Need %d timesteps.\n", ntimesteps);
 
     // Now loop through number of timesteps and calculate amplitudes and velocities, and convert to
     // atomic displacements that we can visualize.
-    double time;
+    double time; // time in ps
+    /*
     for (int t=0; t<ntimesteps; t++){
         time = t*timestep;
         printf("%f\n", time);
     }
+    */
+
+    // Calculate time-dependent amplitudes and velocities.
+    for (int t=0; t<ntimesteps; t++){
+        for (int n=0; n<3*natoms; n++){
+            time = t*timestep;
+            calcAmplitude(n,time);
+            calcVelocity(n,time);
+        }
+    }
+
+    // Calculate mode heat flux as a check.
+    double qnm;
+    for (int m=0; m<3*natoms; m++){
+        qnm = gv[n_indx].val*xm[n_indx]*vm[m];
+    }
+
+    // Convert mode amplitudes to atomic displacements.
+}
+
+/*
+Calculate mode amplitude based on current time.
+Note that frequency is in THz, and time is in ps, so the product is unitless.
+*/
+
+void Visualize::calcAmplitude(int n, double time){
+
+    xm[n] = xm0[n]*cos(2.0*pi*freq[n]*time) + (vm0[n]/(2.0*pi*freq[n]*1e12))*sin(2.0*pi*freq[n]*time); // 1e12 because vm0 is sqrt(kg)*m/s and freq is THz.
+
+}
+
+/*
+Calculate mode velocity based on current time.
+Note that frequency is in THz, and time is in ps, so the product is unitless.
+*/
+
+void Visualize::calcVelocity(int n, double time){
+
+    vm[n] = vm0[n]*cos(2.0*pi*freq[n]*time) - xm0[n]*2.0*pi*freq[n]*1e12*sin(2.0*pi*freq[n]*time); // 1e12 because vm0 is sqrt(kg)*m/s and freq is THz.
+
 }
 
 /*
