@@ -218,23 +218,4 @@ More subtasks will be documented.
 
 This is nice to make sure everything works.
 
-Go into examples/Si_8atoms.
-
-### 2nd order finite difference.
-
-    mpirun -np 2 modecode fd 0.01 2
-
-This creates the FC2 file.
-
-### Acoustic sum rule correction.
-
-    modecode asr 2
-
-This creates the FC2_ASR file, same as FC2 but with self-terms. 
-
-### Get the modes.
-
-There is a custom calc_eig3.py script in this directory. The inputs and molecular weights are
-set so that the correct dynamical matrix is made. Run with:
-
-    python calc_eig3.py
+Go into examples/Si_8atoms and follow the README there.
