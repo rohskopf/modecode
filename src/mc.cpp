@@ -288,13 +288,15 @@ void MC::run(int nargs, char **args)
 
   if (task=="visualize"){
 
-      if (nargs != 4){
-        printf("Need 4 args for visualization! visualize temperature n_indx\n");
+      if (nargs != 6){
+        printf("Need 6 args for visualization! visualize temperature n_indx timestep scale_factor\n");
         printf("You gave %d args.\n", nargs);
         exit(1);
       }
       visualize->temperature = atof(args[2]);
       visualize->n_indx = atoi(args[3]);
+      visualize->timestep = atof(args[4]);
+      visualize->scale_factor = atof(args[5]);
 
       visualize->initialize();
       visualize->readEmat();

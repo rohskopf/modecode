@@ -39,7 +39,7 @@ using namespace std;
 using namespace MC_NS;
 
 Visualize::Visualize(MC *mc) : Ptrs(mc) {
-    //fh_debug = fopen("DEBUG_ASR","w");
+    //fh_debug = fopen("DEBUG_VIS","w");
     //fh_fc2 = fopen("FC2_ASR","w");
     //pr_call=false;
     //esp_call=false;
@@ -49,6 +49,7 @@ Visualize::~Visualize()
 {
 
     //fclose(fh_debug);
+    
     //fclose(fh_fc2);
 
     //if (order >= 3) mem->deallocate(fc3);
@@ -97,14 +98,20 @@ void Visualize::calcInitialState()
     // Initialize the state (mode amplitudes and velocities).
     // The mode given by n_indx is initialized with a positive amplitude.
     // The rest of the modes are intitialized with positive velocities.
-    xm[n_indx] = sqrt(kb*temperature)/freq[n_indx]; // Units sqrt(kg)*m
-    for (int n=0; n<3*natoms; n++){
+    xm0[n_indx] = sqrt(kb*temperature)/(2.0*pi*freq[n_indx]*1e12); // Units sqrt(kg)*m
+    double qnm;
+    for (int n=3; n<3*natoms; n++){
         if (n!=n_indx){
             //printf(" %d %d %e\n", gv[n].n1, gv[n].n2, gv[n].val);
-            vm[n] = sqrt(kb*temperature); // Units sqrt(kg)*m/s
-            if (gv[n].val < 0.0) vm[n] = vm[n]*(-1.0);
+            vm0[n] = sqrt(kb*temperature); // Units sqrt(kg)*m/s
+            if (gv[n].val < 0.0) vm0[n] = vm0[n]*(-1.0);
         }
+        
+        // Calculate qnm just to check it's positive.
+        //qnm = gv[n].val*xm0[n_indx]*vm0[n];
+        //fprintf(fh_debug, "%d %e %e %e %e\n", n, gv[n].val, xm0[n_indx], vm0[n], qnm);
     }
+    
  
 
 }
@@ -123,7 +130,7 @@ void Visualize::calcTimeDependence()
 
     // Find maximum time.
     double minfreq = 1.0; // Just choose some number that we know isn't the minimum.
-    for (int n=0; n<3*natoms; n++){
+    for (int n=3; n<3*natoms; n++){
         if ( (freq[n] < minfreq) && (freq[n] > 0.0) ){
             minfreq = freq[n];
         }
@@ -131,9 +138,10 @@ void Visualize::calcTimeDependence()
 
     printf(" Minimum nonzero frequency: %e THz\n", minfreq);
     double maxtime = (2.0*3.1415926535)/minfreq;
-    double timestep = 10.0; // ps. We don't need a sufficient timestep for MD, this is just visualizing.
+    //double timestep = 10.0; // ps. We don't need a sufficient timestep for MD, this is just visualizing.
     printf(" Need %e ps of time.\n", maxtime);
     int ntimesteps = round(maxtime/timestep);
+    ntimesteps = 100;
     printf(" Need %d timesteps.\n", ntimesteps);
 
     // Now loop through number of timesteps and calculate amplitudes and velocities, and convert to
@@ -145,23 +153,47 @@ void Visualize::calcTimeDependence()
         printf("%f\n", time);
     }
     */
-
-    // Calculate time-dependent amplitudes and velocities.
-    for (int t=0; t<ntimesteps; t++){
-        for (int n=0; n<3*natoms; n++){
-            time = t*timestep;
-            calcAmplitude(n,time);
-            calcVelocity(n,time);
+    
+    // Find largest GV within +/- 10 modes from n_indx.
+    largest_gv=abs(gv[n_indx-10].val);
+    for (int n=n_indx-9; n<n_indx+10; n++){
+        if (abs(gv[n].val) > largest_gv){
+            largest_gv = abs(gv[n].val);
         }
     }
+    printf(" Largest GV within +/- 10 modes of n=%d: %e\n", n_indx, largest_gv);
 
-    // Calculate mode heat flux as a check.
+    // Calculate time-dependent amplitudes and velocities.
+    fh_disp = fopen("disp.xyz", "w");
+    mass = lmp->atom->mass;
+    type = lmp->atom->type;
+    tag = lmp->atom->tag;
+    x = lmp->atom->x;
     double qnm;
-    for (int m=0; m<3*natoms; m++){
-        qnm = gv[n_indx].val*xm[n_indx]*vm[m];
+    double qn;
+    double qn_sum;
+    for (int t=0; t<ntimesteps; t++){
+        qn = 0.0;
+        time = t*timestep;
+        fprintf(fh_disp, "%d\n", natoms);
+        fprintf(fh_disp, "Atoms. Timestep: %d\n", t);
+        for (int n=3; n<3*natoms; n++){
+            calcAmplitude(n,time);
+            calcVelocity(n,time);
+            qnm = gv[n].val*xm[n_indx]*vm[n];
+            qn += qnm;
+        }
+        qn_sum += qn/ntimesteps;
+        //fprintf(fh_debug, "%f %e\n", time, qn*6.242e+18);
+        //fprintf(fh_debug, "%f %e %e %e\n", time, xm[21], xm[22], xm[23]);
+        
+        // Convert mode amplitudes to atomic displacements.
+        convertMode2Cartesian();
+        
     }
-
-    // Convert mode amplitudes to atomic displacements.
+    printf(" qn_sum: %e\n", qn_sum);
+    fclose(fh_disp);
+    
 }
 
 /*
@@ -183,6 +215,50 @@ Note that frequency is in THz, and time is in ps, so the product is unitless.
 void Visualize::calcVelocity(int n, double time){
 
     vm[n] = vm0[n]*cos(2.0*pi*freq[n]*time) - xm0[n]*2.0*pi*freq[n]*1e12*sin(2.0*pi*freq[n]*time); // 1e12 because vm0 is sqrt(kg)*m/s and freq is THz.
+
+}
+
+/*
+Convert mode amplitudes to atomic displacements.
+*/
+
+void Visualize::convertMode2Cartesian(){
+
+    //printf("%e %e\n", abs(gv[21+1].val), largest_gv);
+
+    double ux,uy,uz;
+    for (int i=0; i<natoms; i++){
+        double mi = mass[type[i]]*(1.0/(6.02214076e23*1e3)); // atom mass in kg
+        //printf("%e\n", mi);
+        ux = 0.0;
+        uy = 0.0;
+        uz = 0.0;
+        for (int n=3; n<3*natoms; n++){
+        
+            // Scale displacement by magnitude of GV.
+            if (n==n_indx){
+                ux += (1.0/sqrt(mi))*emat[3*(tag[i]-1)+0][n]*xm[n]*largest_gv;
+                uy += (1.0/sqrt(mi))*emat[3*(tag[i]-1)+1][n]*xm[n]*largest_gv;
+                uz += (1.0/sqrt(mi))*emat[3*(tag[i]-1)+2][n]*xm[n]*largest_gv;
+            }
+        
+            else{
+                ux += (1.0/sqrt(mi))*emat[3*(tag[i]-1)+0][n]*xm[n]*abs(gv[n].val);
+                uy += (1.0/sqrt(mi))*emat[3*(tag[i]-1)+1][n]*xm[n]*abs(gv[n].val);
+                uz += (1.0/sqrt(mi))*emat[3*(tag[i]-1)+2][n]*xm[n]*abs(gv[n].val);
+            }
+            //fprintf(fh_debug, "%d %d %e %e %e\n", i, n, emat[3*(tag[i]-1)+0][n], emat[3*(tag[i]-1)+1][n], emat[3*(tag[i]-1)+2][n]);
+            //fprintf(fh_debug, "%d %d %e\n", i, n, xm[n]);
+
+            
+        }       
+        // Convert to angstrom and scale to better visualize
+        ux = ux*1e10*scale_factor;
+        uy = uy*1e10*scale_factor;
+        uz = uz*1e10*scale_factor;
+        //fprintf(fh_debug, "%d %e %e %e\n", i, ux, uy, uz);
+        fprintf(fh_disp, "%d %e %e %e\n", type[i], x[i][0]+ux, x[i][1]+uy, x[i][2]+uz);
+  }
 
 }
 
