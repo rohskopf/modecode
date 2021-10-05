@@ -129,19 +129,26 @@ void Visualize::calcTimeDependence()
     printf(" Calculating time dependence of mode amplitudes and velocities.\n");
 
     // Find maximum time.
+    /*
     double minfreq = 1.0; // Just choose some number that we know isn't the minimum.
     for (int n=3; n<3*natoms; n++){
         if ( (freq[n] < minfreq) && (freq[n] > 0.0) ){
             minfreq = freq[n];
         }
     }
+    */
+    // The minimum frequency should be either n_indx or m_indx, whatever is smaller.
+    // This is because these will be the largest motions in the movie, and we wanna capture them.
+    double minfreq;
+    if (freq[m_indx] < freq[n_indx]) minfreq = freq[m_indx];
+    else minfreq = freq[n_indx];
 
     printf(" Minimum nonzero frequency: %e THz\n", minfreq);
     double maxtime = (2.0*3.1415926535)/minfreq;
     //double timestep = 10.0; // ps. We don't need a sufficient timestep for MD, this is just visualizing.
     printf(" Need %e ps of time.\n", maxtime);
     int ntimesteps = round(maxtime/timestep);
-    ntimesteps = 100;
+    //ntimesteps = 100;
     printf(" Need %d timesteps.\n", ntimesteps);
 
     // Now loop through number of timesteps and calculate amplitudes and velocities, and convert to
@@ -153,15 +160,6 @@ void Visualize::calcTimeDependence()
         printf("%f\n", time);
     }
     */
-    
-    // Find largest GV within +/- 10 modes from n_indx.
-    largest_gv=abs(gv[n_indx-10].val);
-    for (int n=n_indx-9; n<n_indx+10; n++){
-        if (abs(gv[n].val) > largest_gv){
-            largest_gv = abs(gv[n].val);
-        }
-    }
-    printf(" Largest GV within +/- 10 modes of n=%d: %e\n", n_indx, largest_gv);
 
     // Calculate time-dependent amplitudes and velocities.
     fh_disp = fopen("disp.xyz", "w");
@@ -369,6 +367,30 @@ void Visualize::readGV()
 
         }
         
+    }
+
+    // Find largest GV for modes m interacting with n_indx.
+    if (largest_gv_setting == 0){
+        largest_gv=abs(gv[3].val);
+        for (int n=4; n<3*natoms; n++){
+            if (abs(gv[n].val) > largest_gv){
+                largest_gv = abs(gv[n].val);
+                m_indx = gv[n].n2;
+            }
+        }
+        printf(" Largest GV is (m,n)=(%d,%d): %e\n", n_indx, m_indx,largest_gv);
+    }
+
+    // Find largest GV within +/- 10 modes from n_indx.
+    if (largest_gv_setting == 1){
+        largest_gv=abs(gv[n_indx-10].val);
+        for (int n=n_indx-9; n<n_indx+10; n++){
+            if (abs(gv[n].val) > largest_gv){
+                largest_gv = abs(gv[n].val);
+                m_indx = gv[n].n2;
+            }
+        }
+        printf(" Largest GV within +/- 10 modes of n=%d: %e\n", n_indx, largest_gv);
     }
 
     fh.close();

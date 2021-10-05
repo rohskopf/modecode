@@ -75,6 +75,7 @@ void In::readInput()
   getline(INPUT, line);
   while (line != "----------------------------------------LAMMPS PAIR STYLE COMMANDS")
   {
+    //std::cout << line << std::endl;
     commands.append(line);
     commands.append(",");
     getline(INPUT,line);
