@@ -142,9 +142,11 @@ void Visualize::calcTimeDependence()
     double minfreq;
     if (freq[m_indx] < freq[n_indx]) minfreq = freq[m_indx];
     else minfreq = freq[n_indx];
+    // If minfreq is zero now, then set it back to freq[n_indx].
+    if (minfreq == 0.0) minfreq = freq[n_indx];
 
     printf(" Minimum nonzero frequency: %e THz\n", minfreq);
-    double maxtime = (2.0*3.1415926535)/minfreq;
+    double maxtime = ((2.0*3.1415926535)/minfreq) + additional_time;
     //double timestep = 10.0; // ps. We don't need a sufficient timestep for MD, this is just visualizing.
     printf(" Need %e ps of time.\n", maxtime);
     int ntimesteps = round(maxtime/timestep);
@@ -355,7 +357,8 @@ void Visualize::readGV()
 
         stringstream ss(line);
         ss >> n1 >> n2 >> val;
-        if (n1==n_indx){
+        //if ((n1==n_indx) && (n1>3) && (n2>3) ){
+        if ((n1==n_indx)){
             gv[counter].n1=n1;
             gv[counter].n2=n2;
             gv[counter].val=val;

@@ -4,7 +4,7 @@ Here we "visualize" heat flux by observing the time dependent displacements asso
 
 The `visualize` feature works with the following command:
 
-    mpirun -np nprocs modecode visualize temperature nindx timestep scalefactor largestgvsetting
+    mpirun -np nprocs modecode visualize temperature nindx timestep scalefactor largestgvsetting additionaltime
     
 where 
 
@@ -12,7 +12,8 @@ where
 - `nindx` is the index, starting from 0, of the mode you want to visualize heat flux for.
 - `timestep` is the timestep to view the visualization in ps.
 - `scalefactor` is scales the atomic displacements for visualization purposes.
-- `largestgvsettign` determines how the largest GV for mode `n=nindx` is found, 0 finds largest GV among all modes, while 1 finds largest GV within +/- 10 modes from `nindx`.
+- `largestgvsettign` determines how the largest GV for mode `n=nindx` is found, 0 finds largest GV within +/- 10 modes from `nindx`, while 1 finds largest GV among all modes.
+- `additionaltime` is the additional visualization time in ps. We've found that 10 ps is usually enough to visualize heat transfer mechanisms.
 
 To try this example, first place EMAT and GV in the previous directory (these can be downloaded here: https://www.dropbox.com/sh/nq1owq4wmh285qy/AACNYH8kVLq2xQU91AfctHv9a?dl=0).
 

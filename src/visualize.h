@@ -39,6 +39,7 @@ namespace MC_NS
     
     double largest_gv; // largest gv within +/- 10 modes from n_indx
     int largest_gv_setting; // 0 - take largest GV within +/- 10 modes, 1 - take largest GV across all modes.
+    double additional_time; // additional visualization time in ps
     int m_indx; // mode m with largest GV interaction with mode nindx.
 
     int natoms;

@@ -289,8 +289,8 @@ void MC::run(int nargs, char **args)
 
   if (task=="visualize"){
 
-      if (nargs != 7){
-        printf("Need 7 args for visualization! visualize temperature n_indx timestep scale_factor largest_gv_setting\n");
+      if (nargs != 8){
+        printf("Need 8 args for visualization! visualize temperature n_indx timestep scale_factor largest_gv_setting additional_time\n");
         printf("You gave %d args.\n", nargs);
         exit(1);
       }
@@ -299,6 +299,7 @@ void MC::run(int nargs, char **args)
       visualize->timestep = atof(args[4]);
       visualize->scale_factor = atof(args[5]);
       visualize->largest_gv_setting = atoi(args[6]); // 0 - take largest GV within +/- 10 modes, 1 - take largest GV across all modes.
+      visualize->additional_time = atof(args[7]);
 
       visualize->initialize();
       visualize->readEmat();
