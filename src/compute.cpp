@@ -355,3 +355,46 @@ void Compute::readFcs()
 
 
 }
+
+/*
+Sum directional mode coupling constants.
+*/
+void Compute::sumDMCC()
+{
+
+    printf(" Reading GVs.\n");
+    natoms = lmp->atom->natoms;
+    mem->allocate(kn,natoms*3);
+    
+    for (int n=0; n<3*natoms; n++){
+        kn[n] = 0.0;
+    }
+    
+
+    // Read number of GVs
+    int n1,n2;
+    double val;
+    ifstream fh("../GV");
+    string line;
+    //ngv = 0;
+    while (getline(fh, line))
+    {
+        stringstream ss(line);
+        ss >> n1 >> n2 >> val;
+        kn[n1] += abs(val);
+        //if (n1==n_indx) ngv++;
+    }
+    //ngv = ngv-1; // subtract 1 for first line
+    //printf(" Found %d FC3s.\n", nfc3);
+    fh.close();
+
+    FILE * fh_kn;
+    fh_kn = fopen("kn.dat","w");
+    
+    for (int n=3; n<3*natoms; n++){
+        fprintf(fh_kn, "%d %e\n", n, kn[n]);
+    }
+    
+    fclose(fh_kn);
+
+}

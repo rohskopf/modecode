@@ -26,6 +26,7 @@ namespace MC_NS
     void eigenvectorSpatialParameter();
     void readFcs();
     void readEmat();
+    void sumDMCC(); // Calculate Kn = sum(Knm) for all modes n.
 
     /* Booleans */
     bool pr_call;
@@ -34,6 +35,7 @@ namespace MC_NS
     /* Arrays */
     double *prs; // participation ratios
     double *esp; // eigenvector spatial parameters
+    double *kn; // Kn = sum(Knm), sum of directional mode coupling constants.
 
     int order;  
     int natoms;
