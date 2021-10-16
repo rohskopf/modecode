@@ -32,6 +32,9 @@ class ComputeModeHeatflux : public Compute {
   void compute_vector();
 
   int rank;
+  int nprocs;
+  
+  int *nepp; // number of elements per proc (number of nmcc2s per proc).
 
   double **emat; // eigenvectors
   double **x0; // equilibrium positions
@@ -69,10 +72,18 @@ class ComputeModeHeatflux : public Compute {
   double *iflux_arr; // 1D array that holds the total interface flux, for MPI reduce.
                      // iflux = iflux_arr[0]
 
+  double qtot_p; // total harmonic heat flux at each timestep, on a single proc.
+  double qtot; // total harmonic heat flux at each timestep.
+  double **hf_p; // 2D array holds the time-averaged contributions of mode heat fluxes on a single proc.
   double **hf; // 2D array that holds the time-averaged contributions of mode heat fluxes. 
   double normalize; // integer argument of the "thermo" command
   double testicle; 
   int nsteps; // number of timesteps
+  // Setting variable for output. 
+  // All settings output total heat flux as a function of time in qtot.dat.
+  int setting1; // 0 to compute <Qnm> using ../GV
+                // 1 to compute Qnm(t) using GV in current directory, used if you wanna study behavior of a few particular modes.
+                // 2 to compute Qnm(t) using ../GV
 
 
   int nmcc2;
@@ -121,6 +132,7 @@ class ComputeModeHeatflux : public Compute {
   FILE * fh_em; // Mode energy file handle
   FILE * fh_qtep; // TEP heat flow
   FILE * fh_etep; // TEP total energy
+  FILE * fh_qnm; // Qnm(t), used if setting1==1
 
   FILE * fh_debug; // debug file
 

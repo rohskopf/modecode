@@ -47,10 +47,10 @@ using namespace std;
 /* ---------------------------------------------------------------------- */
 
 ComputeModeHeatflux::ComputeModeHeatflux(LAMMPS *lmp, int narg, char **arg) :
-  Compute(lmp, narg, arg),
-  id_ke(NULL), id_pe(NULL), id_stress(NULL)
+  Compute(lmp, narg, arg)
+  //id_ke(NULL), id_pe(NULL), id_stress(NULL)
 {
-  if (narg != 8) error->all(FLERR,"Illegal compute mode command");
+  //if (narg != 8) error->all(FLERR,"Illegal compute mode command");
 
   vector_flag = 1;
   size_vector = 6;
@@ -59,6 +59,7 @@ ComputeModeHeatflux::ComputeModeHeatflux(LAMMPS *lmp, int narg, char **arg) :
   // store ke/atom, pe/atom, stress/atom IDs used by heat flux computation
   // insure they are valid for these computations
 
+  /*
   int n = strlen(arg[3]) + 1;
   id_ke = new char[n];
   strcpy(id_ke,arg[3]);
@@ -71,9 +72,12 @@ ComputeModeHeatflux::ComputeModeHeatflux(LAMMPS *lmp, int narg, char **arg) :
   id_stress = new char[n];
   strcpy(id_stress,arg[5]);
 
-  normalize = atof(arg[6]);
-  nsteps = atoi(arg[7]);
+  */
+  normalize = atof(arg[3]);
+  nsteps = atoi(arg[4]);
+  setting1 = atoi(arg[5]);
 
+ /*
   int ike = modify->find_compute(id_ke);
   int ipe = modify->find_compute(id_pe);
   int istress = modify->find_compute(id_stress);
@@ -86,24 +90,31 @@ ComputeModeHeatflux::ComputeModeHeatflux(LAMMPS *lmp, int narg, char **arg) :
   if (modify->compute[istress]->pressatomflag == 0)
     error->all(FLERR,
                "Compute heat/flux compute ID does not compute stress/atom");
+  */
 
   vector = new double[6];
   iflux_arr = new double[1];
 
-  //rank = MPI_COMM_WORLD.Get_rank ( ); // Get_rank gets the rank of the calling process in the communicator
-
-  fh_disp = fopen("disp.dat", "w");
-  fh_xm = fopen("xm.dat", "w");
-  fh_fm = fopen("fm.dat", "w");
-  fh_tm = fopen("tm.dat", "w");
-  fh_miflux = fopen("miflux.dat", "w");
-  fh_iflux = fopen("iflux.dat", "w");
-  fh_fv = fopen("fv.dat", "w");
-  fh_fvtot = fopen("ipt.dat", "w");
-  fh_em = fopen("em.dat", "w");
-  fh_qtep = fopen("q_tep.dat", "w");
-  fh_etep = fopen("tep_energy.dat", "w");
-
+  //rank = MPI::MPI_COMM_WORLD.Get_rank ( ); // Get_rank gets the rank of the calling process in the communicator
+  //nprocs = MPI_COMM_WORLD.Get_rank ( ); // get number of procs
+  rank = universe->me;
+  nprocs = universe->nprocs;
+  
+  // Open files
+  if (rank==0){
+    //fh_disp = fopen("disp.dat", "w");
+    //fh_xm = fopen("xm.dat", "w");
+    //fh_fm = fopen("fm.dat", "w");
+    //fh_tm = fopen("tm.dat", "w");
+    //fh_miflux = fopen("miflux.dat", "w");
+    //fh_iflux = fopen("iflux.dat", "w");
+    fh_fv = fopen("fv.dat", "w");
+    fh_fvtot = fopen("qtot.dat", "w");
+    //fh_em = fopen("em.dat", "w");
+    //fh_qtep = fopen("q_tep.dat", "w");
+    //fh_etep = fopen("tep_energy.dat", "w");
+    fh_qnm = fopen("qnm.dat", "w");
+  }
   fh_debug = fopen("D_MODE_HEATFLUX", "w");
 
 }
@@ -112,11 +123,14 @@ ComputeModeHeatflux::ComputeModeHeatflux(LAMMPS *lmp, int narg, char **arg) :
 
 ComputeModeHeatflux::~ComputeModeHeatflux()
 {
+
+  /*
   delete [] id_ke;
   delete [] id_pe;
   delete [] id_stress;
   delete [] vector;
   delete [] iflux_arr;
+  */
 
   memory->destroy(emat);
   memory->destroy(x0);
@@ -141,17 +155,26 @@ ComputeModeHeatflux::~ComputeModeHeatflux()
   memory->destroy(sidemap);
   memory->destroy(regions);
   memory->destroy(zvals);
+  
+  memory->destroy(nepp);
+  
+  //memory->destroy(qtot);
+  //memory->destroy(qtot_p);
 
-  fclose(fh_disp);
-  fclose(fh_xm);
-  fclose(fh_fm);
-  fclose(fh_miflux);
-  fclose(fh_iflux);
-  fclose(fh_fv);
-  fclose(fh_fvtot);
-  fclose(fh_em);
-  fclose(fh_qtep);
-  fclose(fh_etep);
+  //printf("ASDFADSFADSF--------------------------------------------------------------asdfadsfasdfsf-----------\n");
+  if (rank==0){
+    //fclose(fh_disp);
+    //fclose(fh_xm);
+    //fclose(fh_fm);
+    //fclose(fh_miflux);
+    //fclose(fh_iflux);
+    fclose(fh_fv);
+    fclose(fh_fvtot);
+    //fclose(fh_em);
+    //fclose(fh_qtep);
+    //fclose(fh_etep);
+    fclose(fh_qnm);
+  }
 
 
   fclose(fh_debug);
@@ -164,7 +187,7 @@ void ComputeModeHeatflux::init()
 {
 
   // error checks
-
+  /*
   int ike = modify->find_compute(id_ke);
   int ipe = modify->find_compute(id_pe);
   int istress = modify->find_compute(id_stress);
@@ -174,6 +197,7 @@ void ComputeModeHeatflux::init()
   c_ke = modify->compute[ike];
   c_pe = modify->compute[ipe];
   c_stress = modify->compute[istress];
+  */
 
   int natoms = atom->natoms;
 
@@ -206,6 +230,8 @@ void ComputeModeHeatflux::init()
   memory->create(miflux,natoms*3,"mode:miflux");
   memory->create(tm,natoms*3,"mode:tm");
   memory->create(em,natoms*3,"mode:em");
+  //memory->create(qtot_p, 1, "mode:qtot_p");
+  //memory->create(qtot, 1, "mode:qtot");
   for (int n=0; n<3*natoms; n++){
     tm[n]=0.0;
     em[n]=0.0;
@@ -291,7 +317,16 @@ void ComputeModeHeatflux::init()
 
   /* MCC2 */
 
-  ifstream fh_mcc2("../GV");
+  ifstream fh_mcc2;
+  if (setting1==0) fh_mcc2.open("../GV");
+  else if (setting1==1){
+    printf("Computing Qnm(t) with local GV file.\n");
+    fh_mcc2.open("GV");
+  }
+  else if (setting1==2){
+    printf("Computing Qnm(t) with ../GV.\n");
+    fh_mcc2.open("../GV");
+  }
 
   if (!fh_mcc2.is_open()) {
       printf("Unable to open GV.\n");
@@ -306,6 +341,37 @@ void ComputeModeHeatflux::init()
   }
 
   printf("  Found %d MCC2s.\n", nmcc2);
+  
+  // Split MCC2s over procs
+  //int *nepp;
+  
+  memory->create(nepp, nprocs, "modeheatflux:nepp"); // number elements (FCs) per proc
+  for (int p=0; p<nprocs; p++){
+      nepp[p] = nmcc2/nprocs;
+  }
+
+  // divide up the remainder
+  for (int p=0; p<(nmcc2 % nprocs); p++){
+      nepp[p] += 1;
+  }
+
+  if (rank==0){
+      printf(" Splitting MCC2s on procs like:\n");
+      for (int p=0; p<nprocs; p++){
+          printf("  %d MCC2s on proc %d.\n", nepp[p],p);
+      }
+  }
+
+  int start_indx = 0;
+  for (int p=0; p<rank; p++){
+      start_indx += nepp[p];
+  }
+  int end_indx = 0; //napp[0]-1;
+  for (int p=0; p<rank+1; p++){
+      end_indx += nepp[p];
+  }
+  end_indx=end_indx-1;
+  printf("  Proc %d: %d-%d.\n", rank,start_indx,end_indx);
 
   memory->create(mcc2,nmcc2,"mode:mcc2");
 
@@ -313,15 +379,66 @@ void ComputeModeHeatflux::init()
 
   ifstream readfile7;
 
-  readfile7.open("../GV");
+  if (setting1==0) readfile7.open("../GV");
+  else if (setting1==1) readfile7.open("GV");
+  else if (setting1==2) readfile7.open("../GV");
 
+  int mcc2_count = 0;
+  int mcc2_count_p = 0; // count on each proc
+  int n1,n2;
+  double mcc;
   for (int n=0; n<nmcc2; n++){
-    readfile7 >> mcc2[n].i >> mcc2[n].j >> mcc2[n].val;
+  
+    readfile7 >> n1 >> n2 >> mcc;
+    if (start_indx<=mcc2_count && mcc2_count <= end_indx){
+      mcc2[mcc2_count_p].i = n1;
+      mcc2[mcc2_count_p].j = n2;
+      mcc2[mcc2_count_p].val = mcc;
+      //readfile7 >> mcc2[n].i >> mcc2[n].j >> mcc2[n].val;
+      //printf("rank %d: %d %d %e --- %d %d %d\n", rank, mcc2[mcc2_count_p].i, mcc2[mcc2_count_p].j, mcc2[mcc2_count_p].val, start_indx, end_indx, mcc2_count);
+      mcc2_count_p++;
+    }
+    mcc2_count ++;
   }
+  
+  //printf("rank %d: %e\n", rank, mcc2[0].val);
 
   readfile7.close();
-  
+
+  /* INDICES_HEATFLUX */
+  /*
+  ifstream fh_ih("INDICES_HEATFLUX");
+
+  if (!fh_ih.is_open()) {
+      printf("Unable to open INDICES_HEATFLUX.\n");
+      exit(1);
+  }
+
+  //string line;
+  nih = 0;
+  while (getline(fh_ih, line))
+  {
+      nih=nih+1;
+  }
+
+  printf("  Found %d heat flux pairs to output at each time.\n", nih);
+
+  memory->create(indices_heatflux,nih,"mode:indices_heatflux");
+
+  fh_ih.close();
+
+  ifstream readfile8;
+
+  readfile8.open("INDICES_HEATFLUX");
+
+  for (int i=0; i<nih; i++){
+    readfile8 >> indices_heatflux[i].n >> indices_heatflux[i].m;
+  }
+
+  readfile8.close();
   //printf(" ****************** %d %d %d %e\n", mcc3[5].i, mcc3[5].j, mcc3[5].k, mcc3[5].val);
+  */
+
 
   /*
   readfile6.open("MCC3");
@@ -366,7 +483,7 @@ void ComputeModeHeatflux::compute_vector()
   invoked_vector = update->ntimestep;
 
   // invoke 3 computes if they haven't been already
-
+  /*
   if (!(c_ke->invoked_flag & INVOKED_PERATOM)) {
     c_ke->compute_peratom();
     c_ke->invoked_flag |= INVOKED_PERATOM;
@@ -379,6 +496,7 @@ void ComputeModeHeatflux::compute_vector()
     c_stress->compute_peratom();
     c_stress->invoked_flag |= INVOKED_PERATOM;
   }
+  */
 
   // heat flux vector = jc[3] + jv[3]
   // jc[3] = convective portion of heat flux = sum_i (ke_i + pe_i) v_i[3]
@@ -405,6 +523,7 @@ void ComputeModeHeatflux::compute_vector()
   int nlocal = atom->nlocal;
   int natoms = atom->natoms;
 
+  /*
   double jc[3] = {0.0,0.0,0.0};
   double jv[3] = {0.0,0.0,0.0};
   double eng;
@@ -437,7 +556,7 @@ void ComputeModeHeatflux::compute_vector()
 
   double data[6] = {jc[0]+jv[0],jc[1]+jv[1],jc[2]+jv[2],jc[0],jc[1],jc[2]};
   MPI_Allreduce(data,vector,6,MPI_DOUBLE,MPI_SUM,world);
-
+  */
 
   // Displace all atoms along n=3.
   /*
@@ -742,23 +861,30 @@ void ComputeModeHeatflux::compute_vector()
   */
 
   // Mode interaction heat transfer
-  if (universe->me == 0){
-
+  //if (universe->me == 0){
+    
     double ht = 0.0;
+    //qtot = 0.0;
+    qtot_p = 0.0;
     int n1,n2,n3;
     double xn1,xn2,xn3;
     double vn1,vn2,vn3;
     double mcc;
     double volume = 5.431*5.431*543.1*1e-30; // m^3
     double contribution;
-    for (int s=0; s<nmcc2; s++){
+    if (rank==0) fprintf(fh_qnm, "%f ", update->ntimestep*1e-3);
+    for (int s=0; s<nepp[rank]; s++){
+     
+    
       n1 = mcc2[s].i;
       n2 = mcc2[s].j;
       xn1 = xm[n1]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
       xn2 = xm[n2]*1e-10; // sqrt(kg) m since 1e-10 m = 1 A.
       vn1 = vm[n1]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
       vn2 = vm[n2]*100; // sqrt(kg) m/s since 100 m/s = 1 A/ps.
-      mcc = mcc2[s].val; // J/(kg*m^2)
+      mcc = mcc2[s].val; // J/(kg*m^2), multiplied by meter since this is SMCC2
+      
+      //printf("rank %d: %e\n", rank, mcc);
       //mcc = mcc*1e-14; // A/ps^2
       // Multiply by 1.0 when comparing to TEP.
       //ht += 1.0*mcc*xn2*vn1*6.242e+6; // eV/ps since 1 J/s = 6.242e+6 eV/ps
@@ -774,8 +900,9 @@ void ComputeModeHeatflux::compute_vector()
       
       // The factor of 1e-10 is because the units are W*m before we divide by volume - we convert the "m" to "A". 
       //ht += 1.0*mcc*xn2*vn1*6.242e+6*1e-10/(16019.1477991*1e-30); // eV/ps since 1 J/s = 6.242e+6 eV/ps
-      contribution = mcc*xn2*vn1*(1.0/volume)*(6.242e6/1e20)*1e18*(-1.0);
-      ht += contribution;
+      //contribution = mcc*xn2*vn1*(1.0/volume)*(6.242e6/1e20)*1e18*(-1.0);
+      contribution = mcc*xn1*vn2*(1.0/volume)*(6.242e6/1e20)*1e18*(-1.0);
+      qtot_p += contribution;
       //}
       //}
 
@@ -793,25 +920,41 @@ void ComputeModeHeatflux::compute_vector()
       }
       */
 
+      if (rank==0 && setting1==1){
+        fprintf(fh_qnm, "%e ", hf[n1][n2]);
+      }
+
+
     }
     
+    if (rank==0 && setting1==1) fprintf(fh_qnm, "\n");
+    
 
-    fprintf(fh_fvtot, "%f %e\n", 0.5*update->ntimestep*1e-3, ht);
+    // sum qtot_p to qtot.
+    //printf("ASDFASDFASDF-----------------------------------\n");
+    //printf("rank %d: %e\n", rank, qtot_p);
+    MPI_Allreduce(&qtot_p,&qtot,1,MPI_DOUBLE,MPI_SUM,world);
+    //qtot = 0.0;
+    if (rank==0) fprintf(fh_fvtot, "%f %e\n", 0.5*update->ntimestep*1e-3, qtot);
 
     //testicle += 1.0;
     //printf("%f\n", testicle);
-    if (update->ntimestep == nsteps){
+  
+    if (rank==0 && update->ntimestep == nsteps){
       for (int n1=0; n1<3*natoms; n1++){
         for (int n2=0; n2<3*natoms; n2++){
           if (abs(hf[n1][n2])>1e-3){
-            fprintf(fh_fv, "%f %f %e\n", freq[n1], freq[n2], hf[n1][n2]);
+            if (n2 > n1){
+                fprintf(fh_fv, "%f %f %e\n", freq[n1], freq[n2], hf[n1][n2]);
+                fprintf(fh_fv, "%f %f %e\n", freq[n2], freq[n1], hf[n1][n2]);
+            }
           }
         }
       }
     }
     //fprintf(fh_fv, "%d %d %e\n", n1, n2, hf[n1][n2]
 
-  } // if (universe->me==0)
+  //} // if (universe->me==0)
 
   // TEP energy
   /*
