@@ -39,7 +39,22 @@ Calculates mode heat flow between two regions of space, which are defined inside
 constants or "spatial mode coupling constants".
 
 ## `compute mode/heatflux`
-Calculates Hardy's heat flux in mode coordinates, with generalized velocities as the inputs. 
+Calculates Hardy's heat flux in mode coordinates, with generalized velocities as the inputs. Use like so:
+
+    compute modeHeatflux all mode/heatflux ${nthermo} ${nsteps} ${modeheatflux_setting}
+    
+where output files are:
+- `qtot.dat` - total harmonic heat flux as a function of time.
+- `qnm.dat` - time averaged <Qnm> for all mode pairs.
+
+This evalues the expression (Knm)(xn)(vm)
+
+## `compute mode/heatflux2`
+Same as compute mode/heatflux, except calculates the heat transfer between two regions of space. Use like so:
+
+    compute modeHeatflux all mode/heatflux2 ${nthermo} ${nsteps} ${modeheatflux_setting}
+    
+This evaluates the expression (Knm)(xm)(vn) *Note that the xm and vn are switched between here and compute mode/heatflux, this is something in my derivations for QAB.*
 
 ## `fix wp`
 Creates a longitudinal wave-packet at finite temperature. 

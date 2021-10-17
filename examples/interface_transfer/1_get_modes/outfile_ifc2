@@ -1,0 +1,60 @@
+ +-----------------------------------------------------------------+
+ +                          ModeCode 0.0                           +
+ +-----------------------------------------------------------------+
+ Reading INPUT.
+ Done reading INPUT.
+ Performing 2 order FD on 4 procs.
+ Cutoff: 3.000000
+ Calculating FC2.
+ Tolerance = 1.000000e-08.
+ 1344 FC2s.
+ Splitting FC2s on procs like:
+  336 FC2s on proc 0.
+  336 FC2s on proc 1.
+  336 FC2s on proc 2.
+  336 FC2s on proc 3.
+  Proc 0: 0-335.
+ Creating FC2 list on each proc.
+ Progress from 0-336:
+ 0
+  Proc 1: 336-671.
+  Proc 2: 672-1007.
+ Progress from 0-336:
+  Proc 3: 1008-1343.
+ Progress from 0-336:
+ Progress from 0-336:
+ 10
+ 20
+ 30
+ 40
+ 50
+ 60
+ 70
+ 80
+ 90
+ 100
+ 110
+ 120
+ 130
+ 140
+ 150
+ 160
+ 170
+ 180
+ 190
+ 200
+ 210
+ 220
+ 230
+ 240
+ 250
+ 260
+ 270
+ 280
+ 290
+ 300
+ 310
+ 320
+ 330
+ Total FC2 above tol: 1152
+ Finished.

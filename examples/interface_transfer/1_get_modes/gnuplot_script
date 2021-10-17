@@ -1,0 +1,16 @@
+set terminal jpeg
+set output 'graph.jpg'
+
+set yrange [0:1]
+set y2range [0:18]
+set xrange [0:2400]
+set x2range [0:2400]
+set ytics nomirror
+set y2tics
+
+set xlabel "Mode Number" font "Hershey/Complex_Script"
+set ylabel "PR" font "Hershey/Complex_Script"
+set y2label "Frequency (THz)" font "Hershey/Complex_Script"
+
+plot "stuff.dat" using 1:2 axes x1y1 title 'PR' pt 7 ps 1 lt -1, \
+     "stuff.dat" using 3 axes x2y2 title 'Frequencies' pt 7 ps 1 lt rgb "red"

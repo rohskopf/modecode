@@ -1,0 +1,25 @@
+set terminal jpeg
+set terminal jpeg enhanced background rgb 'white'
+set output '2dplot.jpg'
+
+set view map
+set size ratio .9
+set key autotitle columnhead
+
+set xrange [3:2400]
+set yrange [3:2400]
+set logscale cb 10
+#set cbtics 10
+
+#set object 1 rect from graph 0, graph 0 to graph 1, graph 1 back
+#set object 1 rect fc rgb "black" fillstyle solid 1.0
+
+#splot "MCC3" using 2:3:4 with points pointtype 5 pointsize 1 palette linewidth 30
+
+set style fill  transparent solid 0.6 noborder
+set style circle radius 1.0
+	
+#plot("MCC3") using 2:3:4 with dots palette
+#plot("MCC3_TEST") using 1:2:3 pt 7 ps 1 palette
+plot("MCC3_AVG_parsed") using 1:2:3 pt 7 ps 1 palette notitle
+#plot("MCC3_NOFIRST") using 2:3:4 pt 7 ps 2 palette notitle

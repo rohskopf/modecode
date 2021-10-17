@@ -22,7 +22,7 @@
 
 #include <cmath>
 #include <cstring>
-#include "compute_mode_heatflux.h"
+#include "compute_mode_heatflux2.h"
 #include "atom.h"
 #include "update.h"
 #include "modify.h"
@@ -46,7 +46,7 @@ using namespace std;
 
 /* ---------------------------------------------------------------------- */
 
-ComputeModeHeatflux::ComputeModeHeatflux(LAMMPS *lmp, int narg, char **arg) :
+ComputeModeHeatflux2::ComputeModeHeatflux2(LAMMPS *lmp, int narg, char **arg) :
   Compute(lmp, narg, arg)
   //id_ke(NULL), id_pe(NULL), id_stress(NULL)
 {
@@ -121,7 +121,7 @@ ComputeModeHeatflux::ComputeModeHeatflux(LAMMPS *lmp, int narg, char **arg) :
 
 /* ---------------------------------------------------------------------- */
 
-ComputeModeHeatflux::~ComputeModeHeatflux()
+ComputeModeHeatflux2::~ComputeModeHeatflux2()
 {
 
   /*
@@ -185,7 +185,7 @@ ComputeModeHeatflux::~ComputeModeHeatflux()
 
 /* ---------------------------------------------------------------------- */
 
-void ComputeModeHeatflux::init()
+void ComputeModeHeatflux2::init()
 {
 
   // error checks
@@ -324,18 +324,18 @@ void ComputeModeHeatflux::init()
   /* MCC2 */
 
   ifstream fh_mcc2;
-  if (setting1==0) fh_mcc2.open("../GV");
+  if (setting1==0) fh_mcc2.open("../SMCC2");
   else if (setting1==1){
-    printf("Computing Qnm(t) with local GV file.\n");
-    fh_mcc2.open("GV");
+    printf("Computing Qnm(t) with local SMCC2 file.\n");
+    fh_mcc2.open("SMCC2");
   }
   else if (setting1==2){
-    printf("Computing Qnm(t) with ../GV.\n");
-    fh_mcc2.open("../GV");
+    printf("Computing Qnm(t) with ../SMCC2.\n");
+    fh_mcc2.open("../SMCC2");
   }
 
   if (!fh_mcc2.is_open()) {
-      printf("Unable to open GV.\n");
+      printf("Unable to open SMCC2.\n");
       exit(1);
   }
 
@@ -385,9 +385,9 @@ void ComputeModeHeatflux::init()
 
   ifstream readfile7;
 
-  if (setting1==0) readfile7.open("../GV");
-  else if (setting1==1) readfile7.open("GV");
-  else if (setting1==2) readfile7.open("../GV");
+  if (setting1==0) readfile7.open("../SMCC2");
+  else if (setting1==1) readfile7.open("SMCC2");
+  else if (setting1==2) readfile7.open("../SMCC2");
 
   int mcc2_count = 0;
   int mcc2_count_p = 0; // count on each proc
@@ -483,7 +483,7 @@ void ComputeModeHeatflux::init()
 
 /* ---------------------------------------------------------------------- */
 
-void ComputeModeHeatflux::compute_vector()
+void ComputeModeHeatflux2::compute_vector()
 {
 
   invoked_vector = update->ntimestep;
@@ -917,13 +917,11 @@ void ComputeModeHeatflux::compute_vector()
       // The factor of 1e-10 is because the units are W*m before we divide by volume - we convert the "m" to "A". 
       //ht += 1.0*mcc*xn2*vn1*6.242e+6*1e-10/(16019.1477991*1e-30); // eV/ps since 1 J/s = 6.242e+6 eV/ps
       //contribution = mcc*xn2*vn1*(1.0/volume)*(6.242e6/1e20)*1e18*(-1.0);
-      // mcc has units of m/s^2
+      // mcc has units of 1/s^2
       // xn1 has units of sqrt(kg)*m
       // vn2 has units of sqrt(kg)*m/s
-      // mcc*xn1*vn2 has units of kg*m^3/s^3 = W*m
-      // Dividing by volume gives W/m^2
-      //contribution = mcc*xn1*vn2*(1.0/volume); //*(6.242e6/1e20)*1e18; //*(-1.0);
-      // No need to divide by volume... Just do it in the GK expression. This flux has units of W*m
+      // mcc*xn1*vn2 has units of kg*m^2/s^3 = W
+      // Dividing by area gives W/m^2, but there's no need... We can do that when post processing.
       contribution = mcc*xn1*vn2;
       qtot_p += contribution;
       //}
