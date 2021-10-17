@@ -76,14 +76,16 @@ class ComputeModeHeatflux : public Compute {
   double qtot; // total harmonic heat flux at each timestep.
   double **hf_p; // 2D array holds the time-averaged contributions of mode heat fluxes on a single proc.
   double **hf; // 2D array that holds the time-averaged contributions of mode heat fluxes. 
+  double *qnm_p; // 1D array that holds time-averaged mode contributions to the heat flux, on a single proc.
+  double *qnm; // 1D array that holds time-averaged mode contributions to the heat flux.
   double normalize; // integer argument of the "thermo" command
   double testicle; 
   int nsteps; // number of timesteps
   // Setting variable for output. 
   // All settings output total heat flux as a function of time in qtot.dat.
   int setting1; // 0 to compute <Qnm> using ../GV
-                // 1 to compute Qnm(t) using GV in current directory, used if you wanna study behavior of a few particular modes.
-                // 2 to compute Qnm(t) using ../GV
+                // 1 to compute Qnm(t) using GV in current directory, used if you wanna study behavior of a few particular modes. ONLY USE WITH ONE PROC FOR NOW!!!!!!!!!
+                // 2 to compute Qnm(t) using ../GV. NOT CODED YET
 
 
   int nmcc2;

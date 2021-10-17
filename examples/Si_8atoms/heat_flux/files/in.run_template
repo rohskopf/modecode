@@ -25,7 +25,7 @@ R2 zhi = ${r2_zhi}
 """
 variable nthermo equal 10
 variable nsteps equal 20
-variable modeheatflux_setting equal 2
+variable modeheatflux_setting equal 0
 
 # Define regions and groups
 region r1 block EDGE EDGE EDGE EDGE 0.0+${tol} ${r1_zhi}

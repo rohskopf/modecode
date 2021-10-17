@@ -151,6 +151,8 @@ ComputeModeHeatflux::~ComputeModeHeatflux()
   memory->destroy(em);
   //memory->destroy(mcc3);
   memory->destroy(hf);
+  memory->destroy(qnm);
+  memory->destroy(qnm_p);
 
   memory->destroy(sidemap);
   memory->destroy(regions);
@@ -230,11 +232,15 @@ void ComputeModeHeatflux::init()
   memory->create(miflux,natoms*3,"mode:miflux");
   memory->create(tm,natoms*3,"mode:tm");
   memory->create(em,natoms*3,"mode:em");
+  memory->create(qnm, natoms*3*natoms*3, "mode:qnm");
+  memory->create(qnm_p, natoms*3*natoms*3, "mode:qnm_p");
   //memory->create(qtot_p, 1, "mode:qtot_p");
   //memory->create(qtot, 1, "mode:qtot");
   for (int n=0; n<3*natoms; n++){
     tm[n]=0.0;
     em[n]=0.0;
+    qnm[n]=0.0;
+    qnm_p[n]=0.0;
   }
   
   
@@ -872,7 +878,8 @@ void ComputeModeHeatflux::compute_vector()
     double mcc;
     double volume = 5.431*5.431*543.1*1e-30; // m^3
     double contribution;
-    if (rank==0) fprintf(fh_qnm, "%f ", update->ntimestep*1e-3);
+    int indx;
+    //if (rank==0) fprintf(fh_qnm, "%f ", update->ntimestep*1e-3);
     for (int s=0; s<nepp[rank]; s++){
      
     
@@ -908,7 +915,11 @@ void ComputeModeHeatflux::compute_vector()
 
       // Add HF contribution, divided by normalize=ntimesteps/nthermo.
       //hf[n1][n2] += contribution/normalize; //*(nthermo/update->ntimestep);
-      hf[n1][n2] += abs(contribution/normalize); //*(nthermo/update->ntimestep);
+      //hf[n1][n2] += abs(contribution/normalize); //*(nthermo/update->ntimestep);
+      
+      indx = (3*natoms)*n1 + n2;
+      qnm_p[indx] += contribution/normalize;
+      //printf("%d %d %d %e\n", n1, n2, indx, qnm_p[indx]);
 
       //if (update->ntimestep==200){
         //fprintf(fh_debug, "%d %d %e %e %e\n", n1,n2,mcc,xm[n2],vm[n1]);
@@ -921,7 +932,7 @@ void ComputeModeHeatflux::compute_vector()
       */
 
       if (rank==0 && setting1==1){
-        fprintf(fh_qnm, "%e ", hf[n1][n2]);
+        fprintf(fh_qnm, "%e ", qnm_p[indx]);
       }
 
 
@@ -940,15 +951,32 @@ void ComputeModeHeatflux::compute_vector()
     //testicle += 1.0;
     //printf("%f\n", testicle);
   
+    if (update->ntimestep == nsteps){
+      // Reduce all the qnm values across procs
+      //printf("REDUCING!!!!!!!!!!!!!!!!!\n");
+      MPI_Allreduce(qnm_p, qnm, 3*natoms*3*natoms ,MPI_DOUBLE,MPI_SUM,world);
+    }
+    
     if (rank==0 && update->ntimestep == nsteps){
       for (int n1=0; n1<3*natoms; n1++){
         for (int n2=0; n2<3*natoms; n2++){
+          indx = 3*natoms*n1 + n2;
+          //printf("%d %d %e %e %e\n", n1, n2, qnm[indx], freq[n1], freq[n2]);
+          if (abs(qnm[indx])>0){
+            if (n2 > n1){
+              fprintf(fh_qnm, "%f %f %e\n", freq[n1], freq[n2], qnm[indx]);
+              fprintf(fh_qnm, "%f %f %e\n", freq[n2], freq[n1], qnm[indx]);
+            }
+          }
+        
+          /*
           if (abs(hf[n1][n2])>1e-3){
             if (n2 > n1){
                 fprintf(fh_fv, "%f %f %e\n", freq[n1], freq[n2], hf[n1][n2]);
                 fprintf(fh_fv, "%f %f %e\n", freq[n2], freq[n1], hf[n1][n2]);
             }
           }
+          */
         }
       }
     }
