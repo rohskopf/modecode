@@ -24,6 +24,8 @@ For a setting of 2, both plot and gif data are output.
 If you use setting 0 or 2, you must supply an INDICES file which labels the mode indices (starting
 from zero) that you wish you output data for. 
 
+For a setting of 3, the "mode flux" Jnm = Xn*Vn is output at each time according to the mode pairs given in the PAIRS file.
+
 ## `fix mode`
 Fix mode sets the initial mode temperatures and coordinates. 
 

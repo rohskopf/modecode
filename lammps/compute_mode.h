@@ -62,7 +62,11 @@ class ComputeMode : public Compute {
   int *regions; // regions[i] gives the region that atom i belongs to
 
   int nind; // number of indices of modes for which we want to output quantities for.
+  int npairs; // number of mode pairs for the mode flux calculation.
   int *indices; // indices of modes for which we want to output quantities for.
+  bool indices_bool; // True if INDICES file was supplied, so that indices array gets allocated.
+  int **pairs; // indices of mode pairs for mode flux calculation.
+  bool pairs_bool; // True if PAIRS file was supplied, so that pairs array gets allocated.
 
   double iflux_p; // interface flux from single proc
   double iflux; // interface flux from single proc
@@ -91,7 +95,11 @@ class ComputeMode : public Compute {
 
 
  private:
-  int out_setting;
+  int out_setting; // 0 - Print .dat files for plotting, time-dependent mode quantities.
+                   // 1 - Print .dat files for gifs
+                   // 2 - Print .dat files for both plotting and gifs.
+                   // 3 - Print .dat files of the "mode flux" Jnm = Xn*Vm, which is converted to units (g/mol)*A^2/ps
+                   //     The indices nm are given in the INDICES2 file.
   class Compute *c_ke,*c_pe,*c_stress;
 
   FILE * fh_disp; // Atomic displacement file handle.
@@ -106,6 +114,7 @@ class ComputeMode : public Compute {
   FILE * fh_em; // Mode energy file handle
   FILE * fh_em2; // Mode energy file handle for gifs
   FILE * fh_mc; // Mode coordinate file handle.
+  FILE * fh_jnm; // "Mode flux" file handle.
 
 };
 

@@ -57,8 +57,8 @@ ComputeMode::ComputeMode(LAMMPS *lmp, int narg, char **arg) :
   // Get output setting.
 
   out_setting = atoi(arg[3]);
-  if (out_setting > 2){
-    error->all(FLERR,"Illegal compute mode output setting > 2.");
+  if (out_setting > 3){
+    error->all(FLERR,"Illegal compute mode output setting > 3.");
   }
   //printf("%c\n", out_setting[0]);
 
@@ -72,6 +72,7 @@ ComputeMode::ComputeMode(LAMMPS *lmp, int narg, char **arg) :
   fh_em = fopen("em.dat", "w");
   fh_em2 = fopen("em2.dat", "w");
   fh_mc = fopen("mc.dat", "w");
+  fh_jnm = fopen("jnm.dat", "w");
 
 }
 
@@ -98,6 +99,12 @@ ComputeMode::~ComputeMode()
   memory->destroy(miflux);
   memory->destroy(tm);
   memory->destroy(em);
+  if (indices_bool){
+    memory->destroy(indices);
+  }
+  if (pairs_bool){
+    memory->destroy(indices);
+  }
   //memory->destroy(mcc3);
 
   //memory->destroy(sidemap);
@@ -112,6 +119,7 @@ ComputeMode::~ComputeMode()
   fclose(fh_em); 
   fclose(fh_em2); 
   fclose(fh_mc);
+  fclose(fh_jnm);
 
 }
 
@@ -236,7 +244,7 @@ void ComputeMode::init()
 
   if (fh_ind.is_open()) {
       //printf("Unable to open INDICES file, won't output any mode quantities.\n");
-
+    indices_bool = true;
     string line;
     nind = 0;
     while (getline(fh_ind, line))
@@ -258,11 +266,46 @@ void ComputeMode::init()
     }
 
     fh_ind.close();
-
+   
   }
   else {
+    indices_bool = false;
     printf("Unable to open INDICES file, won't output any mode quantities.\n");
     nind = 0.0;
+  }
+
+  /* PAIRS, for mode flux calculation */
+  ifstream fh_pair;
+  fh_pair.open("PAIRS");
+
+  if (fh_pair.is_open()) {
+    pairs_bool = true;
+    string line;
+    npairs= 0;
+    while (getline(fh_pair, line))
+    {
+        npairs=npairs+1;
+    }
+
+    printf("  Found %d mode pairs for mode flux calculation.\n", npairs);
+
+    memory->create(pairs,npairs,2,"mode:pairs");
+
+    fh_pair.close();
+
+    ifstream fh_pair;
+    fh_pair.open("PAIRS");
+
+    for (int n=0; n<npairs; n++){
+      fh_pair >> pairs[n][0] >> pairs[n][1];
+    }
+
+    fh_pair.close();
+  }
+  else {
+    pairs_bool = false;
+    printf("Unable to open PAIRS file, won't output any mode flux quantities.\n");
+    npairs = 0.0;
   }
 
   /*
@@ -578,6 +621,19 @@ double ComputeMode::compute_scalar()
       for (int n=0; n<3*natoms; n++){
         fprintf(fh_em2, "%d %e %e\n", n,freq[n],em[n]);
       }
+
+    }
+
+    else if (out_setting == 3){ // calculate and print mode fluxes in jnm.dat
+      // Convert units to sqrt(M)*A, where M = g/mol or kg/kmol for coordinates and velocities.
+
+      //fprintf(fh_jnm, "%f ", 0.5*update->ntimestep*1e-3);
+      for (int i=0; i<npairs; i++){
+        //fprintf(fh_jnm, "%e ", xm[pairs[i][0]]*vm[pairs[i][1]]*sqrt(6.02214076e23*1e3)*sqrt(6.02214076e23*1e3));
+        // For now, make the first column zero just so we can use Kia's code, and be sure to use only one pair.
+        fprintf(fh_jnm, "0 %e", xm[pairs[i][0]]*vm[pairs[i][1]]*sqrt(6.02214076e23*1e3)*sqrt(6.02214076e23*1e3));
+      }
+      fprintf(fh_jnm, "\n");
 
     }
 
