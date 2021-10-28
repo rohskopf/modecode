@@ -629,9 +629,10 @@ double ComputeMode::compute_scalar()
 
       //fprintf(fh_jnm, "%f ", 0.5*update->ntimestep*1e-3);
       for (int i=0; i<npairs; i++){
-        //fprintf(fh_jnm, "%e ", xm[pairs[i][0]]*vm[pairs[i][1]]*sqrt(6.02214076e23*1e3)*sqrt(6.02214076e23*1e3));
+        fprintf(fh_jnm, "%e ", xm[pairs[i][0]]*vm[pairs[i][1]]*sqrt(6.02214076e23*1e3)*sqrt(6.02214076e23*1e3)); // units sqrt(M)*A^2/ps
+        //fprintf(fh_jnm, "%e ", xm[pairs[i][0]]*vm[pairs[i][1]]*1e-20*1e12); // SI units kg*m^2/s
         // For now, make the first column zero just so we can use Kia's code, and be sure to use only one pair.
-        fprintf(fh_jnm, "0 %e", xm[pairs[i][0]]*vm[pairs[i][1]]*sqrt(6.02214076e23*1e3)*sqrt(6.02214076e23*1e3));
+        //fprintf(fh_jnm, "0 %e", xm[pairs[i][0]]*vm[pairs[i][1]]*sqrt(6.02214076e23*1e3)*sqrt(6.02214076e23*1e3));
       }
       fprintf(fh_jnm, "\n");
 
