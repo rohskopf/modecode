@@ -103,7 +103,7 @@ ComputeMode::~ComputeMode()
     memory->destroy(indices);
   }
   if (pairs_bool){
-    memory->destroy(indices);
+    memory->destroy(pairs);
   }
   //memory->destroy(mcc3);
 
