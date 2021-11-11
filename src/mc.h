@@ -31,6 +31,7 @@ namespace MC_NS
         class Tic *tic;
         class Qhgk *qhgk;
         class Visualize *visualize;
+        class Postproc *postproc;
         //class PopTimer *poptimer;
         //class Config;
         MC(int, char **);

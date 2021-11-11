@@ -4,6 +4,10 @@ This example involves calculating the heat flux using compute_mode_heatflux.cpp 
 
     chmod +x run_ensembles.sh
     ./run_ensembles.sh
+    
+This example does a 100 K simulation, where we first equilibrate the system at a temperature of 100 K.
+
+*Make sure to edit in.run_template to have the correct variables like temperature and number of steps.*
 
 See the outputs in qtot_house, and verify that it agrees with one or many procs.
 

@@ -11,7 +11,7 @@ for ((i=1; i<=$N; i++)); do
     lmp_mpi < in.run
     #python integrate6.py
     #cp em.dat ../em_house/em${i}.dat
-    cp qtot.dat ../qtot_house/qtot${i}.dat
+    #cp qtot.dat ../qtot_house/qtot${i}.dat
     cd ..
     #rm -r e$i
 done

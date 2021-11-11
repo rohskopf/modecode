@@ -154,17 +154,19 @@ ComputeModeHeatflux::~ComputeModeHeatflux()
   memory->destroy(qnm);
   memory->destroy(qnm_p);
 
-  memory->destroy(sidemap);
-  memory->destroy(regions);
-  memory->destroy(zvals);
+  //memory->destroy(sidemap);
+  //memory->destroy(regions);
+  //memory->destroy(zvals);
   
   memory->destroy(nepp);
+  
   
   //memory->destroy(qtot);
   //memory->destroy(qtot_p);
 
   //printf("ASDFADSFADSF--------------------------------------------------------------asdfadsfasdfsf-----------\n");
   if (rank==0){
+    //printf("ASDFASDFASDFASFASDDASFDS-------------------\n");
     //fclose(fh_disp);
     //fclose(fh_xm);
     //fclose(fh_fm);
@@ -969,7 +971,7 @@ void ComputeModeHeatflux::compute_vector()
   
     if (update->ntimestep == nsteps){
       // Reduce all the qnm values across procs
-      //printf("REDUCING!!!!!!!!!!!!!!!!!\n");
+      printf("REDUCING!!!!!!!!!!!!!!!!!\n");
       MPI_Allreduce(qnm_p, qnm, 3*natoms*3*natoms ,MPI_DOUBLE,MPI_SUM,world);
     }
     

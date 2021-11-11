@@ -1,0 +1,91 @@
+#echo screen
+ 
+newton on
+boundary	 	 p p p
+units	 	 	 metal
+atom_style	 	 atomic
+atom_modify sort 1 1000.0
+
+read_data DATA
+
+# Input variables
+variable nthermo equal 10
+variable modeheatflux_setting equal 0
+variable nsteps equal 20 # Number of timesteps in production run.
+variable temperature equal 100.0 # Desired simulation temperature.
+variable nsteps_nvt equal 10000 # Number of timesteps in NVT equilibration.
+variable nsteps_nve equal 10000 # Number of timesteps in NVE equilibration.
+
+# Post process variables
+variable nsteps_total equal ${nsteps}+${nsteps_nvt}+${nsteps_nve} # Combined total timesteps of all runs, used for compute modeHeatflux.
+variable temperature_velocity equal 2.0*${temperature} # velocities are twice the temperature because of equipartition.
+
+# Define regions and groups
+
+# Neighborlist commands
+neighbor    1.0 bin
+neigh_modify once yes
+
+# Potential
+#pair_style tersoff2  
+#pair_coeff * * Si.tersoff Si Si2
+pair_style tersoff
+pair_coeff * * Si.tersoff Si
+
+# Computes
+#compute dsp all mode/atom
+
+compute      myKE all ke/atom
+compute      myPE all pe/atom
+compute      myStress all stress/atom NULL virial
+#compute modeCompute all mode 0
+#compute modeFv all mode/fv
+
+compute modeHeatflux all mode/heatflux ${nthermo} ${nsteps_total} ${modeheatflux_setting}
+
+# Initialize velocity, thermo settings, timestep and ensemble
+velocity	 all create ${temperature_velocity} 11101 rot yes mom yes
+thermo 1000
+timestep 0.0005
+
+# Equilibrate in NVT
+thermo_style custom step etotal temp
+fix 1 all nvt temp ${temperature} ${temperature} 100.0 # First two numbers are the beginning and final temperature.
+run ${nsteps_nvt}
+unfix 1
+
+# Equilibrate in NVE
+fix 1 all nve 
+run ${nsteps_nve}
+unfix 1
+
+thermo  	 ${nthermo} # New thermo setting for compute mode heat flux
+#thermo_style custom step c_ke_A c_ke_B c_pe_A c_pe_B c_flux[1] c_flux[2] c_flux[3] #ke press vol temp
+thermo_style custom step etotal c_modeHeatflux[1] #ke press vol temp
+#thermo_modify format line "%ld %.10e %.10e %.10e %.10e %e %e %e"
+fix 1 all nve
+#fix 1 all nvt temp 10000.0 1000.0 1.0
+#fix 2 all temp/rescale 1000 1000.0 1000.0 1.0 1.0
+#timestep  0.0005
+
+#fix 2 all momentum 1 linear 1 1 1 rescale
+
+# Run MD	 	 	 	 	  
+#dump 1 all xyz 100 dump.xyz	
+#dump_modify 1 format line "%ld %.9f %.9f %.9f"	 
+#dump 2 all custom 100 dump.velocities vx vy vz
+#dump 3 all custom 100 dump.force fx fy fz
+#dump 3 all custom 1 dump.coords type xs ys zs
+#dump_modify 3 format float %20.15g scale yes
+#dump_modify 2 sort id
+#dump 4 all custom 100 dump.disp id type c_dsp[3]
+#dump_modify 4 sort id
+
+#fix test all mode -0.1 0.1 0.1 # Initialize mode temperatures
+
+run ${nsteps}
+#run 2000
+unfix 1
+#undump 1
+
+#write_data Si.data

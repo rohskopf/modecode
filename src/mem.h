@@ -18,7 +18,7 @@ namespace MC_NS
         // allocator
 
         template <typename T>
-        T* allocate(T *&arr, const unsigned int n1)
+        T* allocate(T *&arr, const unsigned long long int n1)
         {
             try {
                 arr = new T [n1];
@@ -26,6 +26,7 @@ namespace MC_NS
             catch (std::bad_alloc &ba) {
                 std::cout << " Caught an exception when trying to allocate 1-dimensional array" << std::endl;
                 std::cout << " " << ba.what() << " : Array shape = " << n1 << std::endl;
+                std::cout << " " << ba.what() << " : sizeof(T) = " << sizeof(T) << std::endl;
                 std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1) << std::endl;
                 exit(EXIT_FAILURE);
             }
@@ -33,7 +34,7 @@ namespace MC_NS
         }
 
         template <typename T>
-        T** allocate(T **&arr, const unsigned int n1, const unsigned int n2)
+        T** allocate(T **&arr, const unsigned long long int n1, const unsigned long long int n2)
         {
             try {
                 arr = new T *[n1];
@@ -140,12 +141,13 @@ namespace MC_NS
         unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1)
         {
             unsigned long n = n1 * size_of_one;
+            printf(" %d %d\n", n1, size_of_one);
             return n / 1000000;
         }
 
-        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1, const unsigned int n2)
+        unsigned long memsize_in_MB(const int size_of_one, const unsigned long long int n1, const unsigned long long int n2)
         {
-            unsigned long n = n1 * n2 * size_of_one;
+            unsigned long long int n = n1 * n2 * size_of_one;
             return n / 1000000;
         }
 

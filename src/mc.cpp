@@ -13,6 +13,7 @@
 #include "tic.h"
 #include "qhgk.h"
 #include "visualize.h"
+#include "postproc.h"
 //#include "config.h"
 
 /* MPI include file */
@@ -115,6 +116,9 @@ void MC::create()
     }
     if (task=="visualize"){
         visualize = new Visualize(this);
+    }
+    if (task=="postproc"){
+        postproc = new Postproc(this);
     }
     //else{
     //    printf(" INVALID TASK.\n");
@@ -310,6 +314,22 @@ void MC::run(int nargs, char **args)
 
 
   }
+  
+  if (task=="postproc"){
+  
+    if (rank==0) printf(" Post processing simulation data.\n");
+    //if (rank==0) printf(" Reading EMAT.\n");
+    postproc->initialize();
+    postproc->readEmat();
+    if (rank==0) printf(" Finished reading EMAT.\n");
+    postproc->ensemble_dirname = std::string(args[2]); // name of ensemble directories, not including the ensemble number.
+                                                        // E.g. "e_100_" is the general name, but "e_100_1" is the dirname of a particular ensemble directory.
+    printf(" Ensemble dirname: %s\n", postproc->ensemble_dirname.c_str());
+    //int task_postproc = atoi(args[2]);
+    //printf(" Postproc task: %d\n", task_postproc);
+    // Calculate auto-correlation of mode action for certain pairs.
+    postproc->calc1();
+  }
 
   
 }
@@ -342,6 +362,9 @@ void MC::finalize()
     }
     if (task=="visualize"){
         delete visualize;
+    }
+    if (task=="postproc"){
+        delete postproc;
     }
 
 }
