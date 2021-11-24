@@ -27,6 +27,8 @@ namespace MC_NS
     void initialize();
     void readEmat();
     void calc1();
+    void task1();
+    double integrate(double*,double*,int);
     
     // Settings
     string ensemble_dirname;
@@ -37,8 +39,12 @@ namespace MC_NS
     double **emat; // eigenvectors
 
 
+    // Task 1 variables
+    int ntimesteps;
+    double sampling_interval; // time (in ps typically) between measured data points, or MD output.
 
     int natoms;
+    int nmodes;
     int nfc2;
     int nfc3;
     int nfc4;

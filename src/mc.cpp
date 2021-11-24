@@ -320,15 +320,26 @@ void MC::run(int nargs, char **args)
     if (rank==0) printf(" Post processing simulation data.\n");
     //if (rank==0) printf(" Reading EMAT.\n");
     postproc->initialize();
-    postproc->readEmat();
-    if (rank==0) printf(" Finished reading EMAT.\n");
+    
+    //postproc->readEmat();
+    //if (rank==0) printf(" Finished reading EMAT.\n");
+    
+    int task_postproc = atoi(args[3]); // 1 - loop over ensembles, calculate FFT and |FFT|^2 (power spectrum) of all mode amplitudes and velocities, calculate DOS overlap for all pairs, then ensemble average.
+    
+    
     postproc->ensemble_dirname = std::string(args[2]); // name of ensemble directories, not including the ensemble number.
                                                         // E.g. "e_100_" is the general name, but "e_100_1" is the dirname of a particular ensemble directory.
     printf(" Ensemble dirname: %s\n", postproc->ensemble_dirname.c_str());
     //int task_postproc = atoi(args[2]);
     //printf(" Postproc task: %d\n", task_postproc);
+    
+    if (task_postproc==1){
+      postproc->ntimesteps = atoi(args[4]);
+      postproc->sampling_interval = atof(args[5]);
+      postproc->task1();
+    }
     // Calculate auto-correlation of mode action for certain pairs.
-    postproc->calc1();
+    //postproc->calc1();
   }
 
   
