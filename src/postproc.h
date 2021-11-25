@@ -48,6 +48,7 @@ namespace MC_NS
     int nens; // number of ensembles to average the PS overlap for.
     bool indices_bool; // true if INDICES file exists in current dir
     int *indices;
+    int overlap_output_tag; // tag which uniquely names the overlaps.dat file.
 
     int natoms;
     int nmodes;

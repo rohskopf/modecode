@@ -419,7 +419,9 @@ void Postproc::task1()
   // Write the overlaps to a file
   if (rank==0){
     FILE * fh;
-    fh = fopen("overlaps.dat", "w");
+    char filename_overlap[1000];
+    sprintf(filename_overlap, "overlaps%d.dat", overlap_output_tag);
+    fh = fopen(filename_overlap, "w");
     for (int n=0; n<nind; n++){
       for (int m=0; m<nind; m++){
         if (n!=m){
