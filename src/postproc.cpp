@@ -359,19 +359,24 @@ void Postproc::task1()
     
     // Calculate PS overlaps
     if (rank==0) printf(" Calculating PS overlaps for ensemble %d.\n", ens);
+    double integral_n;
     for (int n=start_indx; n<end_indx; n++){
       if (rank==0) printf(" n = %d\n", n);
+      for (int f=0; f<nfreq; f++){
+        amplitude_ps[f] = xm_ps[f][n];
+      }
+      integral_n = integrate(amplitude_ps, freq, nfreq);
       for (int m=0; m<nind; m++){
       
         // Calculate product of xm_ps[n] and vm_ps[m]
         for (int f=0; f<nfreq; f++){
           product[f] = xm_ps[f][n]*vm_ps[f][m];
-          amplitude_ps[f] = xm_ps[f][n];
+          //amplitude_ps[f] = xm_ps[f][n];
           velocity_ps[f] = vm_ps[f][m];
         }
         // Integrate the product, xm_ps and vm_ps
         numerator = integrate(product, freq, nfreq);
-        denominator = integrate(amplitude_ps, freq, nfreq)*integrate(velocity_ps, freq, nfreq);
+        denominator = integral_n*integrate(velocity_ps, freq, nfreq);
         overlaps_p[n*nind+m] += (numerator/denominator)/nens; // contribute to the ensemble averaged PS overlap
       }
     }
