@@ -92,7 +92,7 @@ void Postproc::initialize()
           nind=nind+1;
       }
 
-      printf(" Found %d mode indices in INDICES.\n", nind);
+      if (rank==0) printf(" Found %d mode indices in INDICES.\n", nind);
 
       mem->allocate(indices,nind);
 
@@ -110,7 +110,7 @@ void Postproc::initialize()
     }
     else {
       indices_bool = false;
-      printf("Unable to open INDICES file, won't output any mode quantities.\n");
+      if (rank==0) printf("Unable to open INDICES file, won't output any mode quantities.\n");
       nind = 0.0;
     }    
   }

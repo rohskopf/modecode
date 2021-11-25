@@ -323,12 +323,12 @@ void MC::run(int nargs, char **args)
     //postproc->readEmat();
     //if (rank==0) printf(" Finished reading EMAT.\n");
     
-    int task_postproc = atoi(args[3]); // 1 - loop over ensembles, calculate FFT and |FFT|^2 (power spectrum) of all mode amplitudes and velocities, calculate DOS overlap for all pairs, then ensemble average.
+    int task_postproc = atoi(args[2]); // 1 - loop over ensembles, calculate FFT and |FFT|^2 (power spectrum) of all mode amplitudes and velocities, calculate DOS overlap for all pairs, then ensemble average.
     postproc->task=task_postproc;
     
     postproc->initialize();
     
-    postproc->ensemble_dirname = std::string(args[2]); // name of ensemble directories, not including the ensemble number.
+    postproc->ensemble_dirname = std::string(args[3]); // name of ensemble directories, not including the ensemble number.
                                                         // E.g. "e_100_" is the general name, but "e_100_1" is the dirname of a particular ensemble directory.
     //int task_postproc = atoi(args[2]);
     //printf(" Postproc task: %d\n", task_postproc);
