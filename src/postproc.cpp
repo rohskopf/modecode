@@ -160,8 +160,22 @@ void Postproc::task1()
   // Allocate arrays for storing amplitude PS (xm_ps) and velocity PS (vm_ps)
   double **xm_ps;
   double **vm_ps;
+  double *integral_xm_ps; 
+  double *integral_vm_ps;
+  double *sent_array;
+  double *x_ps_n; // represents all values f of xm_ps[f][n]
+  double *v_ps_m; // represents all values f of vm_ps[f][m]
   mem->allocate(xm_ps, nfreq,nind);
   mem->allocate(vm_ps, nfreq,nind);
+  mem->allocate(integral_xm_ps, nind);
+  mem->allocate(integral_vm_ps, nind);
+  mem->allocate(x_ps_n, nfreq);
+  mem->allocate(v_ps_m, nfreq);
+  mem->allocate(sent_array, 10);
+  for (int i=0; i<10; i++){ 
+    if (rank==0) sent_array[i]=2.0*i;
+    else sent_array[i]=0.0;
+  }
   for (int f=0; f<nfreq; f++){
     for (int n=0; n<nind; n++){
       xm_ps[f][n] = 0.0;
@@ -169,11 +183,9 @@ void Postproc::task1()
     }
   }
   // Allocate array for calculating PS overlaps
-  double *product, *amplitude_ps, *velocity_ps, *overlaps_p, *overlaps;
+  double *product, *overlaps_p, *overlaps;
   double numerator, denominator;
   mem->allocate(product, nfreq);
-  mem->allocate(amplitude_ps, nfreq);
-  mem->allocate(velocity_ps, nfreq);
   mem->allocate(overlaps_p, nind*nind);
   mem->allocate(overlaps, nind*nind);
   for (int n=0; n<nind; n++){
@@ -227,8 +239,26 @@ void Postproc::task1()
   }
   /*--------------------------------------------------------------
               Done declaring and allocating variables and arrays
-    -------------------------------------------------------------*/
-    
+  ---------------------------------------------------------------*/
+  
+  // Test sending rank0_array to sent_array on other procs.
+  /*
+  MPI_Status status;
+  int tag;
+  int destination_proc=1;
+  tag = destination_proc;
+  //printf("Rank 0: %f %f %f %f %f\n", sent_array[0], sent_array[1], sent_array[2], sent_array[3], sent_array[4]);
+  if (rank==0){
+    //printf("Rank 0: %f %f %f %f %f\n", sent_array[0], sent_array[1], sent_array[2], sent_array[3], sent_array[4]);
+    MPI_Send(sent_array,10,MPI_DOUBLE,destination_proc,tag,MPI_COMM_WORLD);
+  }
+  else{
+    printf("Rank %d: %f %f %f %f %f\n", rank, sent_array[0], sent_array[1], sent_array[2], sent_array[3], sent_array[4]);
+    MPI_Recv (sent_array,10,MPI_DOUBLE,0,tag,MPI_COMM_WORLD,&status);
+    printf("Rank %d: %f %f %f %f %f\n", rank, sent_array[0], sent_array[1], sent_array[2], sent_array[3], sent_array[4]);
+  }
+  */
+  
   
   int ens = 1; // current ensemble
   char filename_xm[1000];
@@ -334,6 +364,14 @@ void Postproc::task1()
       }
       //fclose(fh);
       
+      // Calculate the integrals of power spectrums
+      for (int f=0; f<nfreq; f++){
+        x_ps_n[f] = xm_ps[f][n];
+        v_ps_m[f] = vm_ps[f][n];
+      }
+      integral_xm_ps[n] = integrate(x_ps_n, freq, nfreq);
+      integral_vm_ps[n] = integrate(v_ps_m, freq, nfreq);
+      
     } // for int n
     
     // Now loop over all possible pairs of xm[n] and vm[m] to get PS overlap.
@@ -360,24 +398,16 @@ void Postproc::task1()
     // Calculate PS overlaps
     if (rank==0) printf(" Calculating PS overlaps for ensemble %d.\n", ens);
     double integral_n;
+    double integral_m;
     for (int n=start_indx; n<end_indx; n++){
       if (rank==0) printf(" n = %d\n", n);
-      for (int f=0; f<nfreq; f++){
-        amplitude_ps[f] = xm_ps[f][n];
-      }
-      integral_n = integrate(amplitude_ps, freq, nfreq);
       for (int m=0; m<nind; m++){
-      
-        // Calculate product of xm_ps[n] and vm_ps[m]
         for (int f=0; f<nfreq; f++){
           product[f] = xm_ps[f][n]*vm_ps[f][m];
-          //amplitude_ps[f] = xm_ps[f][n];
-          velocity_ps[f] = vm_ps[f][m];
         }
-        // Integrate the product, xm_ps and vm_ps
         numerator = integrate(product, freq, nfreq);
-        denominator = integral_n*integrate(velocity_ps, freq, nfreq);
-        overlaps_p[n*nind+m] += (numerator/denominator)/nens; // contribute to the ensemble averaged PS overlap
+        denominator = integral_xm_ps[n]*integral_vm_ps[m];
+        overlaps_p[n*nind+m] += (numerator/denominator)/nens;
       }
     }
   
@@ -400,13 +430,6 @@ void Postproc::task1()
     
     fclose(fh);
   }
-  
-  /*
-  mem->deallocate(amplitude_ps);
-  mem->deallocate(velocity_ps);
-  mem->deallocate(overlaps);
-  mem->deallocate(product);
-  */
   
   // SIMPLE EXAMPLE TO SHOW THAT FFT WORKS -------------------------------------
   /*
@@ -464,8 +487,13 @@ void Postproc::task1()
   mem->deallocate(freq);
   mem->deallocate(xm_ps);
   mem->deallocate(vm_ps);
-  mem->deallocate(amplitude_ps);
-  mem->deallocate(velocity_ps);
+  mem->deallocate(integral_xm_ps);
+  mem->deallocate(integral_vm_ps);
+  //mem->deallocate(sent_array);
+  mem->deallocate(x_ps_n);
+  mem->deallocate(v_ps_m);
+  //mem->deallocate(amplitude_ps);
+  //mem->deallocate(velocity_ps);
   mem->deallocate(overlaps_p);
   mem->deallocate(overlaps);
   mem->deallocate(product);
