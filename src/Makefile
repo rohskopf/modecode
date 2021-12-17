@@ -1,6 +1,6 @@
 .SUFFIXES: .h .cpp
 #-----------------------------------------------
-# Makefile for the program GEO.
+# Makefile for ModeCode.
 # Please modify the variables properly.
 # We recommend to use gcc >= 4.8 with openMPI >= 1.8
 #-----------------------------------------------
