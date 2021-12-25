@@ -340,6 +340,14 @@ void MC::run(int nargs, char **args)
       postproc->overlap_output_tag = atoi(args[7]);
       postproc->task1();
     }
+    
+    if (task_postproc==2){
+      postproc->ntimesteps = atoi(args[4]);
+      postproc->sampling_interval = atof(args[5]);
+      postproc->nens = atoi(args[6]);
+      //postproc->overlap_output_tag = atoi(args[7]);
+      postproc->task2();
+    }
     // Calculate auto-correlation of mode action for certain pairs.
     //postproc->calc1();
   }

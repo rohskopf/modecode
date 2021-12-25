@@ -28,10 +28,12 @@ namespace MC_NS
     void readEmat();
     void calc1();
     void task1();
+    void task2();
     double integrate(double*,double*,int);
     
     // Settings
     int task; // 1 - calculate power spectrum overlap.
+              // 2 - autocorrelations of anm = xn*vm
     string ensemble_dirname;
 
     /* Booleans */
@@ -55,7 +57,12 @@ namespace MC_NS
     int nfc2;
     int nfc3;
     int nfc4;
-
+    
+    // Task 2 variables;
+    int npairs; // number of pairs in PAIRS file
+    int pairs_bool; // tells whether PAIRS file exists
+    int **pairs; // pairs[i][0] and pairs[i][1] give n and m indices of ith pair, respectively.
+ 
 
 
   };
