@@ -62,6 +62,8 @@ namespace MC_NS
     int npairs; // number of pairs in PAIRS file
     int pairs_bool; // tells whether PAIRS file exists
     int **pairs; // pairs[i][0] and pairs[i][1] give n and m indices of ith pair, respectively.
+    int output_tag; // tag for output file name: integral_norm_${output_tag}.dat
+    int integral_indx; // indx to take integral to, e.g. if noutput for autocorrelation is 100,000 and timestep is 0.0025 ps, then integral_indx=20,000 gives integration time of 50 ps.
  
 
 

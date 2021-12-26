@@ -42,7 +42,7 @@ using namespace std;
 using namespace MC_NS;
 
 Postproc::Postproc(MC *mc) : Ptrs(mc) {
-    //fh_debug = fopen("DEBUG_PP","w");
+    fh_debug = fopen("DEBUG_PP","w");
     //fh_fc2 = fopen("FC2_ASR","w");
     
     rank = mc->rank;
@@ -611,6 +611,7 @@ void Postproc::task2(){
   if (rank==0) printf("   ntimesteps: %d\n", ntimesteps);
   if (rank==0) printf("   Data sampled every %f ps\n", sampling_interval);
   if (rank==0) printf("   Number of ensembles to average autocorrelations for: %d\n", nens);
+  if (rank==0) printf("   Tag which determines file output name integral_norm_%d.dat: %d\n", output_tag,output_tag);
   
   //Post process the input settings
   double sampling_frequency = 1.0/sampling_interval; // frequency of data collection
@@ -620,15 +621,37 @@ void Postproc::task2(){
   /*--------------------------------------------------------------
               Begin declaring and allocating variables and arrays
     -------------------------------------------------------------*/
+  int noutput = ntimesteps/4;
+  printf(" noutput for correlation: %d\n", noutput);
   if (rank==0) printf(" Declaring/allocating variables and arrays.\n");
   double **xm;
   double **vm;
   double *anm;
   double *time;
+  double *corArray;
+  double *in_Q;
+  double *in_Q1;
+  double *out_cor1;
+  double *integrals; // ensemble averaged integrals of normalized autocorrelation
   mem->allocate(xm,ntimesteps,nind);
   mem->allocate(vm,ntimesteps,nind);
   mem->allocate(time,ntimesteps);
   mem->allocate(anm,ntimesteps);
+  mem->allocate(corArray, noutput);
+  mem->allocate(in_Q, ntimesteps);
+  mem->allocate(in_Q1, ntimesteps);
+  mem->allocate(out_cor1, ntimesteps);
+  mem->allocate(integrals,npairs);
+  for (int p=0; p<npairs; p++){
+    integrals[p]=0.0;
+  }
+  
+  fftw_complex *out_Q1,*sp11;
+  fftw_plan my_plan1,my_plan_i1;
+  out_Q1 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ntimesteps);
+  sp11 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ntimesteps);
+  my_plan1 = fftw_plan_dft_r2c_1d(ntimesteps, in_Q1, out_Q1, FFTW_ESTIMATE);
+  my_plan_i1 = fftw_plan_dft_c2r_1d(ntimesteps, sp11, out_cor1, FFTW_ESTIMATE);
   
   // Realize that the pairs array from PAIRS lists the indices associated with possible pairs in the xm.dat and vm.dat files.
   // E.g. if there are 20 modes, pairs would look like:
@@ -646,7 +669,9 @@ void Postproc::task2(){
   char filename_vm[1000];
   
   // Loop over all ensembles.
-  
+  double sum;
+  double aveHeat;
+  double integral;
   for (int ens=1; ens<nens+1; ens++){
   
     /*
@@ -686,22 +711,78 @@ void Postproc::task2(){
     Loop over all pairs, calculated autocorrelation, and time-integrate.
     */
     for (int p=0; p<npairs; p++){
-      printf("%d %d\n", pairs[p][0], pairs[p][1]);
+      //printf("%d %d\n", pairs[p][0], pairs[p][1]);
+      if (p%1000==0){
+        printf("  %d\n", p);
+      }
       // Calculate anm
       for (int t=0; t<ntimesteps; t++){
-        //anm[t] = xm[pairs[p][0]]*vm[pairs[p][0]];
+        anm[t] = xm[t][pairs[p][0]]*vm[t][pairs[p][1]];
       }
+      sum = 0; // subtract the nonzero mean
+      for (int t = 0 ; t < ntimesteps ; t++) sum += anm[t];
+      aveHeat = sum/(ntimesteps*1.);
+      for (int t = 0 ; t < ntimesteps ; t++) in_Q1[t] = anm[t]-aveHeat;
+      // Calculate autocorrelation
+      fftw_execute(my_plan1); 
+
+      for (int t=0;t<ntimesteps;t++){
+        sp11[t][0] = out_Q1[t][0]*out_Q1[t][0] + out_Q1[t][1]*out_Q1[t][1];
+        sp11[t][1] = -out_Q1[t][0]*out_Q1[t][1] + out_Q1[t][1]*out_Q1[t][0];
+      }  
+      
+      fftw_execute(my_plan_i1); 
+      // Now out_cor1[t] has length noutput and contains the autocorrelation of anm[t]
+      
+      // Normalize
+      //double norm = out_cor1[0]/(ntimesteps*ntimesteps);
+      for (int t=0; t<noutput; t++){
+        out_cor1[t] = out_cor1[t]/(ntimesteps*ntimesteps);
+      }
+      for (int t=1; t<noutput; t++){
+        out_cor1[t] = out_cor1[t]/(out_cor1[0]);
+      }
+      out_cor1[0] = 1.0;
+      //print
+      /*
+      for (int t=1; t<noutput; t++){
+        fprintf(fh_debug, "%e\n", out_cor1[t]);
+      }
+      */
+      
+      // Time integrate
+      integral = integrate(out_cor1, time, integral_indx);
+      integrals[p] = (integrals[p]+integral)/nens;
+     
+    
     }    
     
     
   }
+  
+  // Print the average integrals
+  FILE * fh;
+  char filename[1000];
+  sprintf(filename, "integral_norm_%d.dat", output_tag);
+  fh = fopen(filename,"w");
+  for (int p=0; p<npairs; p++){
+    fprintf(fh, "%d %d %e\n", indices[pairs[p][0]],indices[pairs[p][1]], integrals[p]);
+  }
+  fclose(fh);
   
 
  
   
   
   printf(" Deallocating task2 arrays\n");
+  fftw_destroy_plan(my_plan1);
+  fftw_destroy_plan(my_plan_i1);
+  fftw_free(in_Q1);
+  fftw_free(out_Q1);
+  fftw_free(sp11);
+  fftw_free(out_cor1);
   // Deallocate
+  mem->deallocate(integrals);
   mem->deallocate(xm);
   mem->deallocate(vm);
   mem->deallocate(time);
