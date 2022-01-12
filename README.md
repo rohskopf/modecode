@@ -1,6 +1,6 @@
 # ModeCode
 
-Vibrational modes are collective movements in a system. In atomic systems, these collective motions are composed of atoms and they vibrate at specific frequencies. All the motion in an atomic system is determined by Newton's 2nd law, and this motion may be decomposed into the individual modes. This is illustrated below for atoms in a diamond crystal with seemingly random thermal vibrations at finite temperature.
+ModeCode is a massively parallel and modular program that aids in the study of *vibrational modes*. Vibrational modes are collective movements in a system. In atomic systems, these collective motions are composed of atoms and they vibrate at specific frequencies. All the motion in an atomic system is determined by Newton's 2nd law, and this motion may be decomposed into the individual modes. This is illustrated below for atoms in a diamond crystal with seemingly random thermal vibrations at finite temperature.
 
 ![Alt Text](https://github.com/rohskopf/modecode/blob/main/mode_decomposition.gif)
 
