@@ -346,7 +346,15 @@ void MC::run(int nargs, char **args)
       postproc->sampling_interval = atof(args[5]);
       postproc->nens = atoi(args[6]);
       postproc->output_tag = atoi(args[7]);
-      postproc->integral_indx = atoi(args[7]);
+      postproc->integral_indx = atoi(args[8]);
+      postproc->task2();
+    }
+    if (task_postproc==3){
+      postproc->ntimesteps = atoi(args[4]);
+      postproc->sampling_interval = atof(args[5]);
+      postproc->nens = atoi(args[6]);
+      postproc->output_tag = atoi(args[7]);
+      postproc->integral_indx = atoi(args[8]);
       postproc->task2();
     }
     // Calculate auto-correlation of mode action for certain pairs.

@@ -26,14 +26,17 @@ namespace MC_NS
     // Functions.
     void initialize();
     void readEmat();
+    void readGV(); // Read generalized velocities.
     void calc1();
     void task1();
     void task2();
+    void task3();
     double integrate(double*,double*,int);
     
     // Settings
     int task; // 1 - calculate power spectrum overlap.
-              // 2 - autocorrelations of anm = xn*vm
+              // 2 - normalized autocorrelations of anm = xn*vm
+              // 3 - thermal conductivity contributions from pairs nm
     string ensemble_dirname;
 
     /* Booleans */
