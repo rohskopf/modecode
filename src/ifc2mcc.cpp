@@ -1032,7 +1032,7 @@ void Ifc2mcc::go_spatial()
                             }
                             //else if (itype==2 && jtype==1){
                             else if (itype==2 && jtype==1){
-                              mcc2_value -= 1.0*term2; // THIS WORKS FOR SOME REASON -> Don't need K_n2n1????
+                              mcc2_value -= 1.0*term2; // THIS WORKS -> Don't need K_n2n1
                               //k_n2n1 += 0.5*term3; // THIS ALSO WORKS.
                               /*
                               if (n1==0 && n2==0){
