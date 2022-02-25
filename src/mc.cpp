@@ -75,7 +75,12 @@ MC::MC(int narg, char **arg)
     create();
 
     // Grab user input to initialize settings
-    initialize();
+    if (task!="compute"){
+      initialize();
+    }
+    else{
+      in->in_call = false;
+    }
     
     // Run the code and desired task
     run(narg,arg);
@@ -131,6 +136,7 @@ void MC::initialize()
 {
     if (rank==0) printf(" Reading INPUT.\n");
     in->readInput();
+    in->in_call = true;
     if (rank==0) printf(" Done reading INPUT.\n");
 
 }
@@ -273,6 +279,20 @@ void MC::run(int nargs, char **args)
           //compute->readEmat();
           printf(" Calculating ESP.\n");
           compute->eigenvectorSpatialParameter();
+      }
+      if (task_compute=="linewidths"){
+          if (nargs != 5){
+            printf("Need 5 args for linewidth calculation! compute linewidths n_indx temperature\n");
+            exit(1);
+          }
+          //compute->natoms=atoi(args[3]);
+          compute->linewidths_call = true;
+          int n_indx = atoi(args[3]);
+          double temperature = atof(args[4]);
+          //printf(" Reading EMAT\n");
+          //compute->readEmat();
+          printf(" Calculating linewidths matrix for mode %d.\n", n_indx);
+          compute->linewidths(n_indx, temperature);
       }
 
   }

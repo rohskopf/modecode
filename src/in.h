@@ -30,6 +30,8 @@ namespace MC_NS
     double calcD3_MTEP(int,int,int);
     double calcE_MTEP(int*,double*,int);
     double calcRij(double,double,double,double,double,double);
+    
+    bool in_call = true; // tells whether in class was called.
 
     FILE * fh_data;
     FILE * fh_debug;

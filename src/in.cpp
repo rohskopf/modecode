@@ -49,7 +49,9 @@ In::In(MC *mc) : Ptrs(mc) {
 In::~In() 
 {
 
-    mem->deallocate(x0);
+    if (in_call){
+      mem->deallocate(x0);
+    }
 
     //fclose(fh_debug);
 };

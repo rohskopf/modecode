@@ -45,6 +45,10 @@ Compute::Compute(MC *mc) : Ptrs(mc) {
     //fh_fc2 = fopen("FC2_ASR","w");
     pr_call=false;
     esp_call=false;
+    
+    pi = 3.1415926535;
+    hbar = 1.0545718e-34;
+    kb = 1.38064852e-23;
 }
 
 Compute::~Compute() 
@@ -65,6 +69,7 @@ Compute::~Compute()
         mem->deallocate(emat);
         mem->deallocate(esp);
     }
+    
 
 };
 
@@ -397,4 +402,179 @@ void Compute::sumDMCC()
     
     fclose(fh_kn);
 
+}
+
+void Compute::linewidths(int n1, double temperature)
+{
+    printf(" n=%d\n", n1);
+    printf(" Reading MCC3.\n");
+    
+    // declare arrays
+    struct mcc3_struct{
+        int i,j,k;
+        double val;
+    };
+    mcc3_struct *mcc3; // array of MCC3 values
+    double *freq;
+    struct lw_struct{
+        int i,j,k;
+        double val;
+    };
+    lw_struct *lw; // array of linewidths values
+    
+    /* MCC3s */
+    
+    ifstream fh_mcc3("MCC3");
+    string line;
+    int nmcc3 = 0;
+    while (getline(fh_mcc3, line))
+    {
+        nmcc3=nmcc3+1;
+    }
+
+    printf("  Found %d MCC3s.\n", nmcc3);
+
+    mem->allocate(mcc3,nmcc3);
+
+    fh_mcc3.close();
+
+    ifstream readfile6;
+    readfile6.open("MCC3");
+
+    for (int n=0; n<nmcc3; n++){
+      readfile6 >> mcc3[n].i >> mcc3[n].j >> mcc3[n].k >> mcc3[n].val;
+    }
+
+    readfile6.close();
+    
+    printf(" Reading FREQUENCIES\n");
+    
+    /* FREQUENCIES */
+    
+    ifstream fh_freq("FREQUENCIES");
+    int nmodes = 0;
+    while (getline(fh_freq, line))
+    {
+        nmodes=nmodes+1;
+    }
+
+    printf("  Found %d frequencies.\n", nmodes);
+
+    mem->allocate(freq,nmodes);
+
+    ifstream readfile3;
+
+    for (int i = 0; i < nmodes; i++) {
+      freq[i]=0.0;
+    }
+
+    readfile3.open("FREQUENCIES");
+    //readfile2.open("ev_real.txt");
+
+    if (!readfile3.is_open()) {
+        printf("Unable to open FREQUENCIES.\n");
+        exit(1);
+    }
+
+    //printf("natoms: %d\n",  natoms);
+    for (int i=0;i<nmodes;i++){
+      readfile3>>freq[i];
+    }
+    
+    /* Start linewidth calculation */
+    mem->allocate(lw, nmcc3);
+    
+    double summ;
+    double delta1,delta2;
+    //double mcc3;
+    double dist2,dist3; // distribution functions of modes n2 and n3.
+    double term1,term2;
+    
+    // Loop over MCC3s
+    int n2,n3;
+    for (int s=0; s<nmcc3; s++){
+        n2 = mcc3[s].j;
+        n3 = mcc3[s].k;
+        if ( (abs(freq[n1]-freq[n2]-freq[n3]) < 1e-1) )
+        {
+            delta1 = 1.0/(1e-1*1e12); // Need to divide by 2pi?
+            printf("%d %d %d\n", s, n2,n3);
+        } 
+        else{
+            delta1 = 0.0;
+        }
+        
+        if ( (abs(freq[n1]+freq[n2]-freq[n3]) < 1e-1) )
+        {
+            delta2 = 1.0/(1e-1*1e12);
+            printf("%d %d %d\n", s,n2,n3);
+        }
+        else{
+            delta2 = 0.0;
+        }
+
+        // Calculate MCC3 for n1,n2,n3
+        // if (rank==0) printf("  Calculate MCC3 for %d-%d-%d: %f %f %f\n",n1,n2,n3,freq[n1],freq[n2],freq[n3]);
+        //mcc3 = calcMCC3(n1,n2,n3);
+        dist2 = calcDistribution(n2,temperature,freq[n2]);
+        dist3 = calcDistribution(n3,temperature,freq[n3]);
+        //printf(" %e %e %e\n", mcc3, dist2, dist3);
+        //if (abs(mcc3) > 1e47) printf(" Yup!\n");
+        term1 = 0.5*(1+dist2+dist3)*delta1;
+        term2 = (dist2-dist3)*delta2;
+        //if (rank==0) printf("   %e\n", mcc3);
+        //printf("%e\n", (term1+term2) );
+        //printf("  %e\n", mcc3);
+        //printf("  %e %e\n", dist2, dist3);
+        //printf("  %e\n", ( (mcc3*mcc3)/(2.0*pi*freq[n2]*1e12*2.0*pi*freq[n3]*1e12) )*(term1+term2) );
+        lw[s].j = n2;
+        lw[s].k = n3;
+        lw[s].val =  ( (mcc3[s].val*mcc3[s].val)/(2.0*pi*freq[n2]*1e12*2.0*pi*freq[n3]*1e12) )*(term1+term2);
+        lw[s].val = ( (pi*hbar*hbar)/(8.0*2.0*pi*freq[n1]*1e12))*lw[s].val; // Units of J.
+        // Linewidths must have units of rad/s (same as freq).
+        // Convert from J to eV to THz.
+        //linewidths_p[n1] = linewidths_p[n1]*6.242e+18*241.8; // THz
+        // Convert from J to eV.
+        lw[s].val = lw[s].val*6.242e+18; // eV
+        // Convert from eV to rad/s, using E=hbar*omega -> omega = E/hbar.
+        //lw[s].val = (lw[s].val/(6.582119569e-16)); // rad/s
+        //printf("   %e %e\n", linewidths[n1], summ);
+    
+        // Use rad/s or Hz units for frequencies?
+        //summ += ( (mcc3*mcc3)/(1.0*freq[n2]*1e12*1.0*freq[n3]*1e12) )*(term1+term2);
+        
+    }
+    
+    // Print linewidths
+    FILE * fh_lw;
+    fh_lw = fopen("lw.dat","w");
+    for (int s=0; s<nmcc3; s++){
+        fprintf(fh_lw, "%.6e %.6e %.6e\n", freq[lw[s].j], freq[lw[s].k], lw[s].val);
+    
+    }
+    
+    fclose(fh_lw);
+    
+    // deallocate
+    mem->deallocate(mcc3);
+    mem->deallocate(freq);
+    mem->deallocate(lw);
+}
+
+/*
+Calculate BE distribution for a particular mode n.
+*/
+double Compute::calcDistribution(int n, double temperature, double freq_n)
+{
+    double dist;
+    int quantum_setting = 0;
+    if (quantum_setting==0){ // Classical MB distribution.
+        dist = exp(-1.0*(1.0/(kb*temperature))*(hbar*2.0*freq_n*1e12) );
+    }
+    if (quantum_setting==1){ // Quantum BE distribution
+        double exponent = exp(1.0*(1.0/(kb*temperature))*(hbar*2.0*freq_n*1e12) );
+        dist = 1.0/(exponent-1);
+    }
+
+    return dist;
 }

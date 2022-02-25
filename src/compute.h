@@ -21,16 +21,22 @@ namespace MC_NS
 
     FILE * fh_debug;
     FILE * fh_fc2;
+    
+    // constants
+    double pi, hbar, kb;
 
     void participationRatio();
     void eigenvectorSpatialParameter();
     void readFcs();
     void readEmat();
     void sumDMCC(); // Calculate Kn = sum(Knm) for all modes n.
+    void linewidths(int,double);
+    double calcDistribution(int,double,double);
 
     /* Booleans */
     bool pr_call;
     bool esp_call;
+    bool linewidths_call;
 
     /* Arrays */
     double *prs; // participation ratios
