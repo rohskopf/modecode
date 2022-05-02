@@ -38,10 +38,10 @@ MC::MC(int narg, char **arg)
     MPI_Comm_split(MPI_COMM_WORLD, color, key, &comm);
     MPI_Comm_rank(comm,&local);
 
-    //  Get the number of processes.
-    nprocs = MPI::COMM_WORLD.Get_size ( ); //Get_size gets number of processes (np) in communicator group
-    //  Get the individual process ID.
-    rank = MPI::COMM_WORLD.Get_rank ( ); // Get_rank gets the rank of the calling process in the communicator
+    //  Get the number of processes and rank.
+    //int nprocs, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &nprocs); // Gets number of procs in communicator group
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank); // Gets rank of the calling process in the communicator
 
     /************************** Initial Screen Output **************************/
     if (rank == 0)
