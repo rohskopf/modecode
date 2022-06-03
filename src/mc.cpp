@@ -13,7 +13,7 @@
 #include "tic.h"
 #include "qhgk.h"
 #include "visualize.h"
-#include "postproc.h"
+//#include "postproc.h"
 //#include "config.h"
 
 /* MPI include file */
@@ -34,7 +34,7 @@ MC::MC(int narg, char **arg)
     // Split the communicators so that multiple instances of LAMMPS can be run
     MPI_Comm_rank(MPI_COMM_WORLD, &global);
     color = global / 1; // Change "1" to 2 in order to use 2 procs per instance, etc..
-    key = global; 
+    key = global;
     MPI_Comm_split(MPI_COMM_WORLD, color, key, &comm);
     MPI_Comm_rank(comm,&local);
 
@@ -51,7 +51,7 @@ MC::MC(int narg, char **arg)
         std::cout << " +-----------------------------------------------------------------+" << std::endl;
         //std::cout << " Running on " << nprocs << " procs" << std::endl;
     }
-  
+
     //poptimer = new PopTimer(this);
 
     //if (rank == 0) std::cout << " Job started at " << poptimer->DateAndTime() << std::endl;
@@ -81,7 +81,7 @@ MC::MC(int narg, char **arg)
     else{
       in->in_call = false;
     }
-    
+
     // Run the code and desired task
     run(narg,arg);
 
@@ -89,7 +89,7 @@ MC::MC(int narg, char **arg)
     finalize();
 
     /*
-    if (rank == 0) std::cout << std::endl << " Job finished at " 
+    if (rank == 0) std::cout << std::endl << " Job finished at "
         << poptimer->DateAndTime() << std::endl;
     */
 }
@@ -122,13 +122,13 @@ void MC::create()
     if (task=="visualize"){
         visualize = new Visualize(this);
     }
-    if (task=="postproc"){
-        postproc = new Postproc(this);
-    }
+    //if (task=="postproc"){
+    //    postproc = new Postproc(this);
+    //}
     //else{
     //    printf(" INVALID TASK.\n");
     //}
-    
+
 
 }
 
@@ -181,7 +181,7 @@ void MC::run(int nargs, char **args)
       // Convert IFC 2 MCC
       if (ifc2mcc->task==0){
           order = atoi(args[3]);
-          ifc2mcc->go(atof(args[4]));  
+          ifc2mcc->go(atof(args[4]));
       }
       // Extract a range of MCC3s into a single MCC3 file.
       else if (ifc2mcc->task==1){
@@ -213,16 +213,16 @@ void MC::run(int nargs, char **args)
           ifc2mcc->calcFew();
       }
 
-      // Convert IFC 2 MCC within spatial regions (based on atom types 1 and 2). 
+      // Convert IFC 2 MCC within spatial regions (based on atom types 1 and 2).
       if (ifc2mcc->task==5){
           order = atoi(args[3]);
-          ifc2mcc->go_spatial();  
+          ifc2mcc->go_spatial();
       }
 
-      // Convert IFC 2 MCC3 for a particular mode n1. 
+      // Convert IFC 2 MCC3 for a particular mode n1.
       if (ifc2mcc->task==6){
           //order = atoi(args[3]);
-          ifc2mcc->go_n1(atoi(args[3]));  
+          ifc2mcc->go_n1(atoi(args[3]));
       }
 
       // Extract all SMCC2s into a single SMCC2 file.
@@ -231,10 +231,10 @@ void MC::run(int nargs, char **args)
           ifc2mcc->extract_smcc2(atoi(args[3]));
       }
 
-      // Calculate generalized velocities. 
+      // Calculate generalized velocities.
       if (ifc2mcc->task==8){
           //order = atoi(args[3]);
-          ifc2mcc->go_gv(atoi(args[3]));  
+          ifc2mcc->go_gv(atoi(args[3]));
       }
 
   }
@@ -334,54 +334,8 @@ void MC::run(int nargs, char **args)
 
 
   }
-  
-  if (task=="postproc"){
-  
-    if (rank==0) printf(" Post processing simulation data.\n");
-    //if (rank==0) printf(" Reading EMAT.\n");
-    
-    //postproc->readEmat();
-    //if (rank==0) printf(" Finished reading EMAT.\n");
-    
-    int task_postproc = atoi(args[2]); // 1 - loop over ensembles, calculate FFT and |FFT|^2 (power spectrum) of all mode amplitudes and velocities, calculate DOS overlap for all pairs, then ensemble average.
-    postproc->task=task_postproc;
-    
-    postproc->initialize();
-    
-    postproc->ensemble_dirname = std::string(args[3]); // name of ensemble directories, not including the ensemble number.
-                                                        // E.g. "e_100_" is the general name, but "e_100_1" is the dirname of a particular ensemble directory.
-    //int task_postproc = atoi(args[2]);
-    //printf(" Postproc task: %d\n", task_postproc);
-    
-    if (task_postproc==1){
-      postproc->ntimesteps = atoi(args[4]);
-      postproc->sampling_interval = atof(args[5]);
-      postproc->nens = atoi(args[6]);
-      postproc->overlap_output_tag = atoi(args[7]);
-      postproc->task1();
-    }
-    
-    if (task_postproc==2){
-      postproc->ntimesteps = atoi(args[4]);
-      postproc->sampling_interval = atof(args[5]);
-      postproc->nens = atoi(args[6]);
-      postproc->output_tag = atoi(args[7]);
-      postproc->integral_indx = atoi(args[8]);
-      postproc->task2();
-    }
-    if (task_postproc==3){
-      postproc->ntimesteps = atoi(args[4]);
-      postproc->sampling_interval = atof(args[5]);
-      postproc->nens = atoi(args[6]);
-      postproc->output_tag = atoi(args[7]);
-      postproc->integral_indx = atoi(args[8]);
-      postproc->task2();
-    }
-    // Calculate auto-correlation of mode action for certain pairs.
-    //postproc->calc1();
-  }
 
-  
+
 }
 
 void MC::finalize()
@@ -412,9 +366,6 @@ void MC::finalize()
     }
     if (task=="visualize"){
         delete visualize;
-    }
-    if (task=="postproc"){
-        delete postproc;
     }
 
 }
