@@ -1,15 +1,18 @@
  +-----------------------------------------------------------------+
- +                        IFC Calculator 0.0                       +
+ +                          ModeCode 0.0                           +
  +-----------------------------------------------------------------+
  Reading INPUT.
+  Proc 2: 168-251.
+  Proc 3: 252-335.
+ Progress from 0-84:
+ Progress from 0-84:
+ Done reading INPUT.
  Performing 2 order FD on 4 procs.
  Cutoff: 3.000000
   Proc 1: 84-167.
-  Proc 3: 252-335.
+ Progress from 0-84:
  Calculating FC2.
  Tolerance = 1.000000e-08.
- Progress from 0-84:
- Progress from 0-84:
  336 FC2s.
  Splitting FC2s on procs like:
   84 FC2s on proc 0.
@@ -20,8 +23,6 @@
  Creating FC2 list on each proc.
  Progress from 0-84:
  0
-  Proc 2: 168-251.
- Progress from 0-84:
  10
  20
  30

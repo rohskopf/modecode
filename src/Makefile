@@ -17,7 +17,8 @@ LAMMPSLIB = ${HOME}/lammps/build-modecode/liblammps.dylib
 #-----------------------------------------------
 
 CXX = mpicxx
-CXXFLAGS = #-std=c++11 -Wno-write-strings
+CXXFLAGS = -std=c++11 -Wno-write-strings
+
 
 INCLUDE = -I${LAMMPSDIR}
 
