@@ -6,33 +6,30 @@
 #-----------------------------------------------
 
 # Enter the path to your LAMMPS directory
-#LAMMPSDIR = /home/drew/lammps-5Jun19/src
 LAMMPSDIR = ${HOME}/lammps/src
-#LAMMPSDIR = /home/rohskopf/lammps/src
-#USE DEEPMD LAMMPS DIR IF YOU WANNA DO FC ON NNP. 
+#USE DEEPMD LAMMPS DIR IF YOU WANNA DO FC ON NNP.
 #LAMMPSDIR = /home/rohskopf/deepmd_mod/lammps/src
 
 # Enter path to the shared library (.so) file
-#LAMMPSLIB = /home/drew/lammps-5Jun19/src/liblammps_g++_openmpi.so
-LAMMPSLIB = ${HOME}/lammps/src/liblammps_g++_openmpi.so
-#LAMMPSLIB = /home/rohskopf/lammps/src/liblammps_g++_openmpi.so
-#LAMMPSLIB = /home/rohskopf/deepmd_mod/lammps/src/liblammps_g++_openmpi.so
-
+#LAMMPSLIB = ${HOME}/lammps/src/liblammps_g++_openmpi.so
+# On MacOS, need the following
+LAMMPSLIB = ${HOME}/lammps/build-modecode/liblammps.dylib
 #-----------------------------------------------
 
 CXX = mpicxx
 CXXFLAGS = -std=c++11 -Wno-write-strings
 
+
 INCLUDE = -I${LAMMPSDIR}
 
 CXXL =
-LDFLAGS = -L${LAMMPSLIB} 
+LDFLAGS = -L${LAMMPSLIB}
 
 LAPACK =
-LIBS = -lfftw3
+LIBS =
 
 #-----------------------------------------------
-# General rules 
+# General rules
 #-----------------------------------------------
 
 .cpp.o:
@@ -40,7 +37,7 @@ LIBS = -lfftw3
 
 PROG = modecode
 
-CXXSRC= mc.cpp main.cpp mem.cpp in.cpp verify.cpp ifc2mcc.cpp asr.cpp compute.cpp tic.cpp qhgk.cpp visualize.cpp postproc.cpp
+CXXSRC= mc.cpp main.cpp mem.cpp in.cpp verify.cpp ifc2mcc.cpp asr.cpp compute.cpp tic.cpp qhgk.cpp visualize.cpp #postproc.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 
