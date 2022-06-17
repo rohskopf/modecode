@@ -27,9 +27,9 @@ This should make a `liblammps.so` file (or some similar name).
 
 If that doesn't work, you may need to use `cmake` to install LAMMPS (e.g. on MacOS). For that, go into your lammps/ directory and do:
 
-  mkdir build
-  cmake ../cmake  -DPKG_MANYBODY=yes -DBUILD_SHARED_LIBS=yes
-  make
+    mkdir build
+    cmake ../cmake  -DPKG_MANYBODY=yes -DBUILD_SHARED_LIBS=yes
+    make
 
 Which should make a `liblammps.dylib` file on MacOS.
 
