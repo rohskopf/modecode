@@ -18,7 +18,7 @@ Before we install ModeCode, we must first install LAMMPS as a shared library.
 
 Go into the src/ directory of your LAMMPS installation and do:
 
-    make mode=shlib g++_openmpi
+    make yes-MANYBODY mode=shlib g++_openmpi
 
 or any other setting (aside from g++_openmpi) according to the instructions on the LAMMPS website
 (http://gensoft.pasteur.fr/docs/lammps/12Dec2018/Python_shlib.html).
