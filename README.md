@@ -1,4 +1,4 @@
-**ModeCode is available as-is and no longer maintained. It is written in C++ and should be installable if you are skilled in Linux and MPI applications. Feel free to copy the source code in your own application as well, e.g. for finite differences or mode calculations.**
+**ModeCode is available as-is and no longer maintained. It is written in C++ and should be installable with Linux and MPI applications. Feel free to copy the source code in your own application as well, e.g. for finite differences or mode calculations.**
 
 # ModeCode
 
