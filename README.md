@@ -1,3 +1,7 @@
+# NOTE: Maintenance
+
+**ModeCode is delivered as-is and no longer maintained. It is written in C++ and should be installable if you are skilled in Linux and MPI applications. Feel free to copy the source code in your own application as well, e.g. for finite differences or mode calculations.**
+
 # ModeCode
 
 ModeCode is a massively parallel and modular program that aids in the study of *vibrational modes*. Vibrational modes are collective movements in a system, also known as collective variables in the molecular simulation community. In atomic systems, these collective motions are composed of atoms and they vibrate at specific frequencies. All the motion in an atomic system is determined by Newton's 2nd law, and this motion may be decomposed into the individual modes. This is illustrated below for atoms in a diamond crystal with seemingly random thermal vibrations at finite temperature.
