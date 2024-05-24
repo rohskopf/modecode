@@ -1,4 +1,4 @@
-**ModeCode is available as-is for LAMMPS versions around 2022, and not for newer LAMMPS versions.**
+**ModeCode is available as-is for LAMMPS versions around 2021-2022, and not for newer LAMMPS versions.**
 
 # ModeCode
 
